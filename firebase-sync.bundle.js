@@ -34937,7 +34937,7 @@ This typically indicates that your device does not have a healthy Internet conne
     return DEBUG_STATE;
   }
   var BASE_ENDPOINT = "https://content-firebaseappcheck.googleapis.com/v1";
-  var EXCHANGE_RECAPTCHA_TOKEN_METHOD = "exchangeRecaptchaV3Token";
+  var EXCHANGE_RECAPTCHA_ENTERPRISE_TOKEN_METHOD = "exchangeRecaptchaEnterpriseToken";
   var EXCHANGE_DEBUG_TOKEN_METHOD = "exchangeDebugToken";
   var TOKEN_REFRESH_TIME = {
     /**
@@ -35158,12 +35158,12 @@ This typically indicates that your device does not have a healthy Internet conne
       issuedAtTimeMillis: now
     };
   }
-  function getExchangeRecaptchaV3TokenRequest(app, reCAPTCHAToken) {
+  function getExchangeRecaptchaEnterpriseTokenRequest(app, reCAPTCHAToken) {
     const { projectId, appId, apiKey } = app.options;
     return {
-      url: `${BASE_ENDPOINT}/projects/${projectId}/apps/${appId}:${EXCHANGE_RECAPTCHA_TOKEN_METHOD}?key=${apiKey}`,
+      url: `${BASE_ENDPOINT}/projects/${projectId}/apps/${appId}:${EXCHANGE_RECAPTCHA_ENTERPRISE_TOKEN_METHOD}?key=${apiKey}`,
       body: {
-        "recaptcha_v3_token": reCAPTCHAToken
+        "recaptcha_enterprise_token": reCAPTCHAToken
       }
     };
   }
@@ -35602,16 +35602,16 @@ Firebase CLI install instructions: https://firebase.google.com/docs/cli
   }
   var name4 = "@firebase/app-check";
   var version4 = "0.13.1";
-  var RECAPTCHA_URL = "https://www.google.com/recaptcha/api.js";
-  function initializeV3(app, siteKey) {
+  var RECAPTCHA_ENTERPRISE_URL = "https://www.google.com/recaptcha/enterprise.js";
+  function initializeEnterprise(app, siteKey) {
     const initialized = new Deferred();
     const state = getStateReference(app);
     state.reCAPTCHAState = { initialized };
     const divId = makeDiv(app);
-    const grecaptcha = getRecaptcha(false);
+    const grecaptcha = getRecaptcha(true);
     if (!grecaptcha) {
-      loadReCAPTCHAV3Script(() => {
-        const grecaptcha2 = getRecaptcha(false);
+      loadReCAPTCHAEnterpriseScript(() => {
+        const grecaptcha2 = getRecaptcha(true);
         if (!grecaptcha2) {
           throw new Error("no recaptcha");
         }
@@ -35672,16 +35672,16 @@ Firebase CLI install instructions: https://firebase.google.com/docs/cli
       widgetId
     };
   }
-  function loadReCAPTCHAV3Script(onload) {
+  function loadReCAPTCHAEnterpriseScript(onload) {
     const script = document.createElement("script");
-    script.src = RECAPTCHA_URL;
+    script.src = RECAPTCHA_ENTERPRISE_URL + "?render=explicit";
     script.onload = onload;
     document.head.appendChild(script);
   }
-  var ReCaptchaV3Provider = class _ReCaptchaV3Provider {
+  var ReCaptchaEnterpriseProvider = class _ReCaptchaEnterpriseProvider {
     /**
-     * Create a ReCaptchaV3Provider instance.
-     * @param siteKey - ReCAPTCHA V3 siteKey.
+     * Create a ReCaptchaEnterpriseProvider instance.
+     * @param siteKey - reCAPTCHA Enterprise score-based site key.
      */
     constructor(_siteKey) {
       this._siteKey = _siteKey;
@@ -35707,7 +35707,7 @@ Firebase CLI install instructions: https://firebase.google.com/docs/cli
       }
       let result;
       try {
-        const request = getExchangeRecaptchaV3TokenRequest(this._app, attestedClaimsToken);
+        const request = getExchangeRecaptchaEnterpriseTokenRequest(this._app, attestedClaimsToken);
         if (isLimitedUse) {
           request.body["limited_use"] = true;
         }
@@ -35735,14 +35735,14 @@ Firebase CLI install instructions: https://firebase.google.com/docs/cli
     initialize(app) {
       this._app = app;
       this._heartbeatServiceProvider = _getProvider(app, "heartbeat");
-      initializeV3(app, this._siteKey).catch(() => {
+      initializeEnterprise(app, this._siteKey).catch(() => {
       });
     }
     /**
      * @internal
      */
     isEqual(otherProvider) {
-      if (otherProvider instanceof _ReCaptchaV3Provider) {
+      if (otherProvider instanceof _ReCaptchaEnterpriseProvider) {
         return this._siteKey === otherProvider._siteKey;
       } else {
         return false;
@@ -35882,7 +35882,7 @@ Firebase CLI install instructions: https://firebase.google.com/docs/cli
     signOut,
     onAuthStateChanged,
     initializeAppCheck,
-    ReCaptchaV3Provider
+    ReCaptchaEnterpriseProvider
   };
 })();
 /*! Bundled license information:
