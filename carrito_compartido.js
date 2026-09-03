@@ -17,6 +17,9 @@ const CONFIG_FIREBASE = {
   appId: "1:967603772155:web:ea47a58448851ede872e5e",
 };
 
+// REEMPLAZAR con la clave real de reCAPTCHA v3 una vez que Nacho la genere.
+const RECAPTCHA_SITE_KEY = "6LditactAAAAAM_zGyjOGLT_WuaHnCYI1ZYh9qUu";
+
 let firebaseApp = null;
 let db = null;
 let unsubscribeActual = null;
@@ -30,6 +33,12 @@ function inicializarFirebase(configPersonalizada) {
   // simplemente no habria cache offline en esa pestaña, el resto sigue igual.
   FirebaseSync.enableIndexedDbPersistence(db).catch(() => {});
   if (FirebaseSync.getAuth) auth = FirebaseSync.getAuth(firebaseApp);
+  if (RECAPTCHA_SITE_KEY !== '6LditactAAAAAM_zGyjOGLT_WuaHnCYI1ZYh9qUu' && FirebaseSync.initializeAppCheck) {
+    FirebaseSync.initializeAppCheck(firebaseApp, {
+      provider: new FirebaseSync.ReCaptchaV3Provider(RECAPTCHA_SITE_KEY),
+      isTokenAutoRefreshEnabled: true,
+    });
+  }
 }
 
 function conectarAEmulador(host, puerto) {

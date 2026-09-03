@@ -312,7 +312,7 @@
     }
   };
   var getDefaultAppConfig = () => getDefaults()?.config;
-  var getExperimentalSetting = (name4) => getDefaults()?.[`_${name4}`];
+  var getExperimentalSetting = (name5) => getDefaults()?.[`_${name5}`];
   var Deferred = class {
     constructor() {
       this.reject = () => {
@@ -738,7 +738,21 @@
   }
   function noop() {
   }
+  var DEFAULT_INTERVAL_MILLIS = 1e3;
+  var DEFAULT_BACKOFF_FACTOR = 2;
   var MAX_VALUE_MILLIS = 4 * 60 * 60 * 1e3;
+  var RANDOM_FACTOR = 0.5;
+  function calculateBackoffMillis(backoffCount, intervalMillis = DEFAULT_INTERVAL_MILLIS, backoffFactor = DEFAULT_BACKOFF_FACTOR) {
+    const currBaseValue = intervalMillis * Math.pow(backoffFactor, backoffCount);
+    const randomWait = Math.round(
+      // A fraction of the backoff value to add/subtract.
+      // Deviation: changes multiplication order to improve readability.
+      RANDOM_FACTOR * currBaseValue * // A random float (rounded to int by Math.round above) in the range [-1, 1]. Determines
+      // if we add or subtract.
+      (Math.random() - 0.5) * 2
+    );
+    return Math.min(MAX_VALUE_MILLIS, currBaseValue + randomWait);
+  }
   function getModularInstance(service) {
     if (service && service._delegate) {
       return service._delegate;
@@ -769,8 +783,8 @@
      * @param instanceFactory Service factory responsible for creating the public interface
      * @param type whether the service provided by the component is public or private
      */
-    constructor(name4, instanceFactory, type) {
-      this.name = name4;
+    constructor(name5, instanceFactory, type) {
+      this.name = name5;
       this.instanceFactory = instanceFactory;
       this.type = type;
       this.multipleInstances = false;
@@ -797,8 +811,8 @@
   };
   var DEFAULT_ENTRY_NAME = "[DEFAULT]";
   var Provider = class {
-    constructor(name4, container) {
-      this.name = name4;
+    constructor(name5, container) {
+      this.name = name5;
       this.container = container;
       this.component = null;
       this.instances = /* @__PURE__ */ new Map();
@@ -1001,8 +1015,8 @@
     return component.instantiationMode === "EAGER";
   }
   var ComponentContainer = class {
-    constructor(name4) {
-      this.name = name4;
+    constructor(name5) {
+      this.name = name5;
       this.providers = /* @__PURE__ */ new Map();
     }
     /**
@@ -1035,12 +1049,12 @@
      * Firebase SDKs providing services should extend NameServiceMapping interface to register
      * themselves.
      */
-    getProvider(name4) {
-      if (this.providers.has(name4)) {
-        return this.providers.get(name4);
+    getProvider(name5) {
+      if (this.providers.has(name5)) {
+        return this.providers.get(name5);
       }
-      const provider = new Provider(name4, this);
-      this.providers.set(name4, provider);
+      const provider = new Provider(name5, this);
+      this.providers.set(name5, provider);
       return provider;
     }
     getProviders() {
@@ -1094,8 +1108,8 @@
      *
      * @param name The name that the logs will be associated with
      */
-    constructor(name4) {
-      this.name = name4;
+    constructor(name5) {
+      this.name = name5;
       this._logLevel = defaultLogLevel;
       this._logHandler = defaultLogHandler;
       this._userLogHandler = null;
@@ -1298,8 +1312,8 @@
   var unwrap = (value) => reverseTransformCache.get(value);
 
   // node_modules/idb/build/index.js
-  function openDB(name4, version4, { blocked, upgrade, blocking, terminated } = {}) {
-    const request = indexedDB.open(name4, version4);
+  function openDB(name5, version5, { blocked, upgrade, blocking, terminated } = {}) {
+    const request = indexedDB.open(name5, version5);
     const openPromise = wrap(request);
     if (upgrade) {
       request.addEventListener("upgradeneeded", (event) => {
@@ -1471,12 +1485,12 @@
     }
     return true;
   }
-  function _getProvider(app, name4) {
+  function _getProvider(app, name5) {
     const heartbeatController = app.container.getProvider("heartbeat").getImmediate({ optional: true });
     if (heartbeatController) {
       void heartbeatController.triggerHeartbeat();
     }
-    return app.container.getProvider(name4);
+    return app.container.getProvider(name5);
   }
   function _isFirebaseServerApp(obj) {
     if (obj === null || obj === void 0) {
@@ -1601,18 +1615,18 @@
   function initializeApp(_options, rawConfig = {}) {
     let options = _options;
     if (typeof rawConfig !== "object") {
-      const name5 = rawConfig;
-      rawConfig = { name: name5 };
+      const name6 = rawConfig;
+      rawConfig = { name: name6 };
     }
     const config = {
       name: DEFAULT_ENTRY_NAME2,
       automaticDataCollectionEnabled: true,
       ...rawConfig
     };
-    const name4 = config.name;
-    if (typeof name4 !== "string" || !name4) {
+    const name5 = config.name;
+    if (typeof name5 !== "string" || !name5) {
       throw ERROR_FACTORY.create("bad-app-name", {
-        appName: String(name4)
+        appName: String(name5)
       });
     }
     options || (options = getDefaultAppConfig());
@@ -1622,18 +1636,18 @@
         /* AppError.NO_OPTIONS */
       );
     }
-    const existingApp = _apps.get(name4);
+    const existingApp = _apps.get(name5);
     if (existingApp) {
       if (!deepEqual(options, existingApp.options)) {
         throw ERROR_FACTORY.create("duplicate-app", {
-          appName: name4,
+          appName: name5,
           mismatchedParam: "options",
           oldValue: JSON.stringify(existingApp.options),
           newValue: JSON.stringify(options)
         });
       } else if (!deepEqual(config, existingApp.config)) {
         throw ERROR_FACTORY.create("duplicate-app", {
-          appName: name4,
+          appName: name5,
           mismatchedParam: "config",
           oldValue: JSON.stringify(existingApp.config),
           newValue: JSON.stringify(config)
@@ -1642,34 +1656,34 @@
         return existingApp;
       }
     }
-    const container = new ComponentContainer(name4);
+    const container = new ComponentContainer(name5);
     for (const component of _components.values()) {
       container.addComponent(component);
     }
     const newApp = new FirebaseAppImpl(options, config, container);
-    _apps.set(name4, newApp);
+    _apps.set(name5, newApp);
     return newApp;
   }
-  function getApp(name4 = DEFAULT_ENTRY_NAME2) {
-    const app = _apps.get(name4);
-    if (!app && name4 === DEFAULT_ENTRY_NAME2 && getDefaultAppConfig()) {
+  function getApp(name5 = DEFAULT_ENTRY_NAME2) {
+    const app = _apps.get(name5);
+    if (!app && name5 === DEFAULT_ENTRY_NAME2 && getDefaultAppConfig()) {
       return initializeApp();
     }
     if (!app) {
-      throw ERROR_FACTORY.create("no-app", { appName: name4 });
+      throw ERROR_FACTORY.create("no-app", { appName: name5 });
     }
     return app;
   }
-  function registerVersion(libraryKeyOrName, version4, variant) {
+  function registerVersion(libraryKeyOrName, version5, variant) {
     let library = PLATFORM_LOG_STRING[libraryKeyOrName] ?? libraryKeyOrName;
     if (variant) {
       library += `-${variant}`;
     }
     const libraryMismatch = library.match(/\s|\//);
-    const versionMismatch = version4.match(/\s|\//);
+    const versionMismatch = version5.match(/\s|\//);
     if (libraryMismatch || versionMismatch) {
       const warning = [
-        `Unable to register library "${library}" with version "${version4}":`
+        `Unable to register library "${library}" with version "${version5}":`
       ];
       if (libraryMismatch) {
         warning.push(`library name "${library}" contains illegal characters (whitespace or "/")`);
@@ -1678,14 +1692,14 @@
         warning.push("and");
       }
       if (versionMismatch) {
-        warning.push(`version name "${version4}" contains illegal characters (whitespace or "/")`);
+        warning.push(`version name "${version5}" contains illegal characters (whitespace or "/")`);
       }
       logger.warn(warning.join(" "));
       return;
     }
     _registerComponent(new Component(
       `${library}-version`,
-      () => ({ library, version: version4 }),
+      () => ({ library, version: version5 }),
       "VERSION"
       /* ComponentType.VERSION */
     ));
@@ -5665,7 +5679,7 @@
     getNamedGroups() {
       if (!this.hasMatch) throw new RE2JSGroupException("perhaps no match attempted");
       const result = /* @__PURE__ */ Object.create(null);
-      for (const name4 of Object.keys(this.namedGroups)) result[name4] = this.group(name4);
+      for (const name5 of Object.keys(this.namedGroups)) result[name5] = this.group(name5);
       return result;
     }
     /**
@@ -8621,35 +8635,35 @@
       8490,
       1
     ]));
-    static unicodeTable(name4) {
-      if (name4 === "Any") return {
+    static unicodeTable(name5) {
+      if (name5 === "Any") return {
         tab: Parser2.ANY_TABLE,
         fold: Parser2.ANY_TABLE,
         sign: 1
       };
-      if (name4 === "Ascii") return {
+      if (name5 === "Ascii") return {
         tab: Parser2.ASCII_TABLE,
         fold: Parser2.ASCII_FOLD_TABLE,
         sign: 1
       };
-      if (name4 === "Assigned") return {
+      if (name5 === "Assigned") return {
         tab: UnicodeTables.CATEGORIES.get("Cn"),
         fold: UnicodeTables.CATEGORIES.get("Cn"),
         sign: -1
       };
-      if (name4 === "Lc") return {
+      if (name5 === "Lc") return {
         tab: UnicodeTables.CATEGORIES.get("LC"),
         fold: UnicodeTables.FOLD_CATEGORIES.get("LC"),
         sign: 1
       };
-      if (UnicodeTables.CATEGORIES.has(name4)) return {
-        tab: UnicodeTables.CATEGORIES.get(name4),
-        fold: UnicodeTables.FOLD_CATEGORIES.get(name4),
+      if (UnicodeTables.CATEGORIES.has(name5)) return {
+        tab: UnicodeTables.CATEGORIES.get(name5),
+        fold: UnicodeTables.FOLD_CATEGORIES.get(name5),
         sign: 1
       };
-      if (UnicodeTables.SCRIPTS.has(name4)) return {
-        tab: UnicodeTables.SCRIPTS.get(name4),
-        fold: UnicodeTables.FOLD_SCRIPT.get(name4),
+      if (UnicodeTables.SCRIPTS.has(name5)) return {
+        tab: UnicodeTables.SCRIPTS.get(name5),
+        fold: UnicodeTables.FOLD_SCRIPT.get(name5),
         sign: 1
       };
       return null;
@@ -8704,10 +8718,10 @@
       if (min < 0 || min > 1e3 || max === -2 || max > 1e3 || max >= 0 && min > max) throw new RE2JSSyntaxException(Parser2.ERR_INVALID_REPEAT_SIZE, t2.from(start));
       return min << 16 | max & Unicode.MAX_BMP;
     }
-    static isValidCaptureName(name4) {
-      if (name4.length === 0) return false;
-      for (let i2 = 0; i2 < name4.length; i2++) {
-        const c2 = name4.codePointAt(i2);
+    static isValidCaptureName(name5) {
+      if (name5.length === 0) return false;
+      for (let i2 = 0; i2 < name5.length; i2++) {
+        const c2 = name5.codePointAt(i2);
         if (c2 !== Codepoint.CODES.get("_") && !Utils.isalnum(c2)) return false;
       }
       return true;
@@ -9429,15 +9443,15 @@
         const begin = s2.charAt(2) === "P" ? 4 : 3;
         const end = s2.indexOf(">");
         if (end < 0) throw new RE2JSSyntaxException(Parser2.ERR_INVALID_NAMED_CAPTURE, s2);
-        const name4 = s2.substring(begin, end);
-        t2.skipString(name4);
+        const name5 = s2.substring(begin, end);
+        t2.skipString(name5);
         t2.skip(begin + 1);
-        if (!Parser2.isValidCaptureName(name4)) throw new RE2JSSyntaxException(Parser2.ERR_INVALID_NAMED_CAPTURE, s2.substring(0, end + 1));
+        if (!Parser2.isValidCaptureName(name5)) throw new RE2JSSyntaxException(Parser2.ERR_INVALID_NAMED_CAPTURE, s2.substring(0, end + 1));
         const re = this.op(Regexp.Op.LEFT_PAREN);
         re.cap = ++this.numCap;
-        if (this.namedGroups[name4]) throw new RE2JSSyntaxException(Parser2.ERR_DUPLICATE_NAMED_CAPTURE, name4);
-        this.namedGroups[name4] = this.numCap;
-        re.name = name4;
+        if (this.namedGroups[name5]) throw new RE2JSSyntaxException(Parser2.ERR_DUPLICATE_NAMED_CAPTURE, name5);
+        this.namedGroups[name5] = this.numCap;
+        re.name = name5;
         return;
       }
       t2.skip(2);
@@ -9566,10 +9580,10 @@
       const cls = t2.rest();
       const i2 = cls.indexOf(":]");
       if (i2 < 0) return false;
-      const name4 = cls.substring(0, i2 + 2);
-      t2.skipString(name4);
-      const g = POSIX_GROUPS.has(name4) ? POSIX_GROUPS.get(name4) : null;
-      if (g === null) throw new RE2JSSyntaxException(Parser2.ERR_INVALID_CHAR_RANGE, name4);
+      const name5 = cls.substring(0, i2 + 2);
+      t2.skipString(name5);
+      const g = POSIX_GROUPS.has(name5) ? POSIX_GROUPS.get(name5) : null;
+      if (g === null) throw new RE2JSSyntaxException(Parser2.ERR_INVALID_CHAR_RANGE, name5);
       cc.appendGroup(g, (this.flags & RE2Flags.FOLD_CASE) !== 0);
       return true;
     }
@@ -9585,8 +9599,8 @@
         throw new RE2JSSyntaxException(Parser2.ERR_INVALID_CHAR_RANGE, t2.rest());
       }
       c2 = t2.pop();
-      let name4;
-      if (c2 !== Codepoint.CODES.get("{")) name4 = Utils.runeToString(c2);
+      let name5;
+      if (c2 !== Codepoint.CODES.get("{")) name5 = Utils.runeToString(c2);
       else {
         const rest = t2.rest();
         const end = rest.indexOf("}");
@@ -9594,15 +9608,15 @@
           t2.rewindTo(startPos);
           throw new RE2JSSyntaxException(Parser2.ERR_INVALID_CHAR_RANGE, t2.rest());
         }
-        name4 = rest.substring(0, end);
-        t2.skipString(name4);
+        name5 = rest.substring(0, end);
+        t2.skipString(name5);
         t2.skip(1);
       }
-      if (!(name4.length === 0) && name4.codePointAt(0) === Codepoint.CODES.get("^")) {
+      if (!(name5.length === 0) && name5.codePointAt(0) === Codepoint.CODES.get("^")) {
         sign = 0 - sign;
-        name4 = name4.substring(1);
+        name5 = name5.substring(1);
       }
-      const pair = Parser2.unicodeTable(name4);
+      const pair = Parser2.unicodeTable(name5);
       if (pair === null) throw new RE2JSSyntaxException(Parser2.ERR_INVALID_CHAR_RANGE, t2.from(startPos));
       if (pair.sign < 0) sign = 0 - sign;
       const tab = pair.tab;
@@ -28869,8 +28883,8 @@ This typically indicates that your device does not have a healthy Internet conne
       ...prodErrorMap(),
       [code]: message
     };
-    const factory = new ErrorFactory("auth", "Firebase", errorMap);
-    return factory.create(code, {
+    const factory2 = new ErrorFactory("auth", "Firebase", errorMap);
+    return factory2.create(code, {
       appName: auth.name
     });
   }
@@ -30150,9 +30164,9 @@ This typically indicates that your device does not have a healthy Internet conne
       this.persistence = persistence;
       this.auth = auth;
       this.userKey = userKey;
-      const { config, name: name4 } = this.auth;
-      this.fullUserKey = _persistenceKeyName(this.userKey, config.apiKey, name4);
-      this.fullPersistenceKey = _persistenceKeyName("persistence", config.apiKey, name4);
+      const { config, name: name5 } = this.auth;
+      this.fullUserKey = _persistenceKeyName(this.userKey, config.apiKey, name5);
+      this.fullPersistenceKey = _persistenceKeyName("persistence", config.apiKey, name5);
       this.boundEventHandler = auth._onStorageEvent.bind(auth);
       this.persistence._addListener(this.fullUserKey, this.boundEventHandler);
     }
@@ -32614,8 +32628,8 @@ This typically indicates that your device does not have a healthy Internet conne
   BrowserLocalPersistence.type = "LOCAL";
   var browserLocalPersistence = BrowserLocalPersistence;
   var POLLING_INTERVAL_MS = 1e3;
-  function getDocumentCookie(name4) {
-    const escapedName = name4.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
+  function getDocumentCookie(name5) {
+    const escapedName = name5.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
     const matcher = RegExp(`${escapedName}=([^;]+)`);
     return document.cookie.match(matcher)?.[1] ?? null;
   }
@@ -32658,12 +32672,12 @@ This typically indicates that your device does not have a healthy Internet conne
       if (!this._isAvailable()) {
         return null;
       }
-      const name4 = getCookieName(key);
+      const name5 = getCookieName(key);
       if (window.cookieStore) {
-        const cookie = await window.cookieStore.get(name4);
+        const cookie = await window.cookieStore.get(name5);
         return cookie?.value;
       }
-      return getDocumentCookie(name4);
+      return getDocumentCookie(name5);
     }
     // Log out by overriding the idToken with a sentinel value of ""
     async _remove(key) {
@@ -32674,8 +32688,8 @@ This typically indicates that your device does not have a healthy Internet conne
       if (!existingValue) {
         return;
       }
-      const name4 = getCookieName(key);
-      document.cookie = `${name4}=;Max-Age=34560000;Partitioned;Secure;SameSite=Strict;Path=/;Priority=High`;
+      const name5 = getCookieName(key);
+      document.cookie = `${name5}=;Max-Age=34560000;Partitioned;Secure;SameSite=Strict;Path=/;Priority=High`;
       await fetch(`/__cookies__`, { method: "DELETE" }).catch(() => void 0);
     }
     // Listen for cookie changes, both cookieStore and fallback to polling document.cookie
@@ -32683,14 +32697,14 @@ This typically indicates that your device does not have a healthy Internet conne
       if (!this._isAvailable()) {
         return;
       }
-      const name4 = getCookieName(key);
+      const name5 = getCookieName(key);
       if (window.cookieStore) {
         const cb = ((event) => {
-          const changedCookie = event.changed.find((change) => change.name === name4);
+          const changedCookie = event.changed.find((change) => change.name === name5);
           if (changedCookie) {
             listener(changedCookie.value);
           }
-          const deletedCookie = event.deleted.find((change) => change.name === name4);
+          const deletedCookie = event.deleted.find((change) => change.name === name5);
           if (deletedCookie) {
             listener(null);
           }
@@ -32699,9 +32713,9 @@ This typically indicates that your device does not have a healthy Internet conne
         this.listenerUnsubscribes.set(listener, unsubscribe2);
         return window.cookieStore.addEventListener("change", cb);
       }
-      let lastValue = getDocumentCookie(name4);
+      let lastValue = getDocumentCookie(name5);
       const interval = setInterval(() => {
-        const currentValue = getDocumentCookie(name4);
+        const currentValue = getDocumentCookie(name5);
         if (currentValue !== lastValue) {
           listener(currentValue);
           lastValue = currentValue;
@@ -33219,10 +33233,10 @@ This typically indicates that your device does not have a healthy Internet conne
       }
       return false;
     }
-    async _withPendingWrite(write) {
+    async _withPendingWrite(write2) {
       this.pendingWrites++;
       try {
-        await write();
+        await write2();
       } finally {
         this.pendingWrites--;
       }
@@ -34299,7 +34313,7 @@ This typically indicates that your device does not have a healthy Internet conne
       }
     }
   };
-  function _open(auth, url, name4, width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT) {
+  function _open(auth, url, name5, width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT) {
     const top = Math.max((window.screen.availHeight - height) / 2, 0).toString();
     const left = Math.max((window.screen.availWidth - width) / 2, 0).toString();
     let target = "";
@@ -34311,8 +34325,8 @@ This typically indicates that your device does not have a healthy Internet conne
       left
     };
     const ua2 = getUA().toLowerCase();
-    if (name4) {
-      target = _isChromeIOS(ua2) ? TARGET_BLANK : name4;
+    if (name5) {
+      target = _isChromeIOS(ua2) ? TARGET_BLANK : name5;
     }
     if (_isFirefox(ua2)) {
       url = url || FIREFOX_EMPTY_URL;
@@ -34902,6 +34916,947 @@ This typically indicates that your device does not have a healthy Internet conne
     /* ClientPlatform.BROWSER */
   );
 
+  // node_modules/@firebase/app-check/dist/esm/index.esm.js
+  var APP_CHECK_STATES = /* @__PURE__ */ new Map();
+  var DEFAULT_STATE = {
+    activated: false,
+    tokenObservers: []
+  };
+  var DEBUG_STATE = {
+    initialized: false,
+    enabled: false
+  };
+  function getStateReference(app) {
+    return APP_CHECK_STATES.get(app) || { ...DEFAULT_STATE };
+  }
+  function setInitialState(app, state) {
+    APP_CHECK_STATES.set(app, state);
+    return APP_CHECK_STATES.get(app);
+  }
+  function getDebugState() {
+    return DEBUG_STATE;
+  }
+  var BASE_ENDPOINT = "https://content-firebaseappcheck.googleapis.com/v1";
+  var EXCHANGE_RECAPTCHA_TOKEN_METHOD = "exchangeRecaptchaV3Token";
+  var EXCHANGE_DEBUG_TOKEN_METHOD = "exchangeDebugToken";
+  var TOKEN_REFRESH_TIME = {
+    /**
+     * This is the first retrial wait after an error. This is currently
+     * 30 seconds.
+     */
+    RETRIAL_MIN_WAIT: 30 * 1e3,
+    /**
+     * This is the maximum retrial wait, currently 16 minutes.
+     */
+    RETRIAL_MAX_WAIT: 16 * 60 * 1e3
+  };
+  var ONE_DAY = 24 * 60 * 60 * 1e3;
+  var Refresher = class {
+    constructor(operation, retryPolicy, getWaitDuration, lowerBound, upperBound) {
+      this.operation = operation;
+      this.retryPolicy = retryPolicy;
+      this.getWaitDuration = getWaitDuration;
+      this.lowerBound = lowerBound;
+      this.upperBound = upperBound;
+      this.pending = null;
+      this.nextErrorWaitInterval = lowerBound;
+      if (lowerBound > upperBound) {
+        throw new Error("Proactive refresh lower bound greater than upper bound!");
+      }
+    }
+    start() {
+      this.nextErrorWaitInterval = this.lowerBound;
+      this.process(true).catch(() => {
+      });
+    }
+    stop() {
+      if (this.pending) {
+        this.pending.reject("cancelled");
+        this.pending = null;
+      }
+    }
+    isRunning() {
+      return !!this.pending;
+    }
+    async process(hasSucceeded) {
+      this.stop();
+      try {
+        this.pending = new Deferred();
+        this.pending.promise.catch((_e) => {
+        });
+        await sleep(this.getNextRun(hasSucceeded));
+        this.pending.resolve();
+        await this.pending.promise;
+        this.pending = new Deferred();
+        this.pending.promise.catch((_e) => {
+        });
+        await this.operation();
+        this.pending.resolve();
+        await this.pending.promise;
+        this.process(true).catch(() => {
+        });
+      } catch (error) {
+        if (this.retryPolicy(error)) {
+          this.process(false).catch(() => {
+          });
+        } else {
+          this.stop();
+        }
+      }
+    }
+    getNextRun(hasSucceeded) {
+      if (hasSucceeded) {
+        this.nextErrorWaitInterval = this.lowerBound;
+        return this.getWaitDuration();
+      } else {
+        const currentErrorWaitInterval = this.nextErrorWaitInterval;
+        this.nextErrorWaitInterval *= 2;
+        if (this.nextErrorWaitInterval > this.upperBound) {
+          this.nextErrorWaitInterval = this.upperBound;
+        }
+        return currentErrorWaitInterval;
+      }
+    }
+  };
+  function sleep(ms) {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
+  }
+  var ERRORS2 = {
+    [
+      "already-initialized"
+      /* AppCheckError.ALREADY_INITIALIZED */
+    ]: "You have already called initializeAppCheck() for FirebaseApp {$appName} with different options. To avoid this error, call initializeAppCheck() with the same options as when it was originally called. This will return the already initialized instance.",
+    [
+      "use-before-activation"
+      /* AppCheckError.USE_BEFORE_ACTIVATION */
+    ]: "App Check is being used before initializeAppCheck() is called for FirebaseApp {$appName}. Call initializeAppCheck() before instantiating other Firebase services.",
+    [
+      "fetch-network-error"
+      /* AppCheckError.FETCH_NETWORK_ERROR */
+    ]: "Fetch failed to connect to a network. Check Internet connection. Original error: {$originalErrorMessage}.",
+    [
+      "fetch-parse-error"
+      /* AppCheckError.FETCH_PARSE_ERROR */
+    ]: "Fetch client could not parse response. Original error: {$originalErrorMessage}.",
+    [
+      "fetch-status-error"
+      /* AppCheckError.FETCH_STATUS_ERROR */
+    ]: "Fetch server returned an HTTP error status. HTTP status: {$httpStatus}.",
+    [
+      "storage-open"
+      /* AppCheckError.STORAGE_OPEN */
+    ]: "Error thrown when opening storage. Original error: {$originalErrorMessage}.",
+    [
+      "storage-get"
+      /* AppCheckError.STORAGE_GET */
+    ]: "Error thrown when reading from storage. Original error: {$originalErrorMessage}.",
+    [
+      "storage-set"
+      /* AppCheckError.STORAGE_WRITE */
+    ]: "Error thrown when writing to storage. Original error: {$originalErrorMessage}.",
+    [
+      "recaptcha-error"
+      /* AppCheckError.RECAPTCHA_ERROR */
+    ]: "ReCAPTCHA error.",
+    [
+      "initial-throttle"
+      /* AppCheckError.INITIAL_THROTTLE */
+    ]: `{$httpStatus} error. Attempts allowed again after {$time}`,
+    [
+      "throttled"
+      /* AppCheckError.THROTTLED */
+    ]: `Requests throttled due to previous {$httpStatus} error. Attempts allowed again after {$time}`
+  };
+  var ERROR_FACTORY2 = new ErrorFactory("appCheck", "AppCheck", ERRORS2);
+  function getRecaptcha(isEnterprise2 = false) {
+    if (isEnterprise2) {
+      return self.grecaptcha?.enterprise;
+    }
+    return self.grecaptcha;
+  }
+  function ensureActivated(app) {
+    if (!getStateReference(app).activated) {
+      throw ERROR_FACTORY2.create("use-before-activation", {
+        appName: app.name
+      });
+    }
+  }
+  function getDurationString(durationInMillis) {
+    const totalSeconds = Math.round(durationInMillis / 1e3);
+    const days = Math.floor(totalSeconds / (3600 * 24));
+    const hours = Math.floor((totalSeconds - days * 3600 * 24) / 3600);
+    const minutes = Math.floor((totalSeconds - days * 3600 * 24 - hours * 3600) / 60);
+    const seconds = totalSeconds - days * 3600 * 24 - hours * 3600 - minutes * 60;
+    let result = "";
+    if (days) {
+      result += pad(days) + "d:";
+    }
+    if (hours) {
+      result += pad(hours) + "h:";
+    }
+    result += pad(minutes) + "m:" + pad(seconds) + "s";
+    return result;
+  }
+  function pad(value) {
+    if (value === 0) {
+      return "00";
+    }
+    return value >= 10 ? value.toString() : "0" + value;
+  }
+  async function exchangeToken({ url, body }, heartbeatServiceProvider) {
+    const headers = {
+      "Content-Type": "application/json"
+    };
+    const heartbeatService = heartbeatServiceProvider.getImmediate({
+      optional: true
+    });
+    if (heartbeatService) {
+      const heartbeatsHeader = await heartbeatService.getHeartbeatsHeader();
+      if (heartbeatsHeader) {
+        headers["X-Firebase-Client"] = heartbeatsHeader;
+      }
+    }
+    const options = {
+      method: "POST",
+      body: JSON.stringify(body),
+      headers
+    };
+    let response;
+    try {
+      response = await fetch(url, options);
+    } catch (originalError) {
+      throw ERROR_FACTORY2.create("fetch-network-error", {
+        originalErrorMessage: originalError?.message
+      });
+    }
+    if (response.status !== 200) {
+      throw ERROR_FACTORY2.create("fetch-status-error", {
+        httpStatus: response.status
+      });
+    }
+    let responseBody;
+    try {
+      responseBody = await response.json();
+    } catch (originalError) {
+      throw ERROR_FACTORY2.create("fetch-parse-error", {
+        originalErrorMessage: originalError?.message
+      });
+    }
+    const match = responseBody.ttl.match(/^([\d.]+)(s)$/);
+    if (!match || !match[2] || isNaN(Number(match[1]))) {
+      throw ERROR_FACTORY2.create("fetch-parse-error", {
+        originalErrorMessage: `ttl field (timeToLive) is not in standard Protobuf Duration format: ${responseBody.ttl}`
+      });
+    }
+    const timeToLiveAsNumber = Number(match[1]) * 1e3;
+    const now = Date.now();
+    return {
+      token: responseBody.token,
+      expireTimeMillis: now + timeToLiveAsNumber,
+      issuedAtTimeMillis: now
+    };
+  }
+  function getExchangeRecaptchaV3TokenRequest(app, reCAPTCHAToken) {
+    const { projectId, appId, apiKey } = app.options;
+    return {
+      url: `${BASE_ENDPOINT}/projects/${projectId}/apps/${appId}:${EXCHANGE_RECAPTCHA_TOKEN_METHOD}?key=${apiKey}`,
+      body: {
+        "recaptcha_v3_token": reCAPTCHAToken
+      }
+    };
+  }
+  function getExchangeDebugTokenRequest(app, debugToken) {
+    const { projectId, appId, apiKey } = app.options;
+    return {
+      url: `${BASE_ENDPOINT}/projects/${projectId}/apps/${appId}:${EXCHANGE_DEBUG_TOKEN_METHOD}?key=${apiKey}`,
+      body: {
+        // eslint-disable-next-line
+        debug_token: debugToken
+      }
+    };
+  }
+  var DB_NAME3 = "firebase-app-check-database";
+  var DB_VERSION3 = 1;
+  var STORE_NAME2 = "firebase-app-check-store";
+  var DEBUG_TOKEN_KEY = "debug-token";
+  var dbPromise2 = null;
+  function getDBPromise() {
+    if (dbPromise2) {
+      return dbPromise2;
+    }
+    dbPromise2 = new Promise((resolve, reject) => {
+      try {
+        const request = indexedDB.open(DB_NAME3, DB_VERSION3);
+        request.onsuccess = (event) => {
+          resolve(event.target.result);
+        };
+        request.onerror = (event) => {
+          reject(ERROR_FACTORY2.create("storage-open", {
+            originalErrorMessage: event.target.error?.message
+          }));
+        };
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          switch (event.oldVersion) {
+            case 0:
+              db.createObjectStore(STORE_NAME2, {
+                keyPath: "compositeKey"
+              });
+          }
+        };
+      } catch (e2) {
+        reject(ERROR_FACTORY2.create("storage-open", {
+          originalErrorMessage: e2?.message
+        }));
+      }
+    });
+    return dbPromise2;
+  }
+  function readTokenFromIndexedDB(app) {
+    return read(computeKey2(app));
+  }
+  function writeTokenToIndexedDB(app, token) {
+    return write(computeKey2(app), token);
+  }
+  function writeDebugTokenToIndexedDB(token) {
+    return write(DEBUG_TOKEN_KEY, token);
+  }
+  function readDebugTokenFromIndexedDB() {
+    return read(DEBUG_TOKEN_KEY);
+  }
+  async function write(key, value) {
+    const db = await getDBPromise();
+    const transaction = db.transaction(STORE_NAME2, "readwrite");
+    const store = transaction.objectStore(STORE_NAME2);
+    const request = store.put({
+      compositeKey: key,
+      value
+    });
+    return new Promise((resolve, reject) => {
+      request.onsuccess = (_event) => {
+        resolve();
+      };
+      transaction.onerror = (event) => {
+        reject(ERROR_FACTORY2.create("storage-set", {
+          originalErrorMessage: event.target.error?.message
+        }));
+      };
+    });
+  }
+  async function read(key) {
+    const db = await getDBPromise();
+    const transaction = db.transaction(STORE_NAME2, "readonly");
+    const store = transaction.objectStore(STORE_NAME2);
+    const request = store.get(key);
+    return new Promise((resolve, reject) => {
+      request.onsuccess = (event) => {
+        const result = event.target.result;
+        if (result) {
+          resolve(result.value);
+        } else {
+          resolve(void 0);
+        }
+      };
+      transaction.onerror = (event) => {
+        reject(ERROR_FACTORY2.create("storage-get", {
+          originalErrorMessage: event.target.error?.message
+        }));
+      };
+    });
+  }
+  function computeKey2(app) {
+    return `${app.options.appId}-${app.name}`;
+  }
+  var logger2 = new Logger("@firebase/app-check");
+  async function readTokenFromStorage(app) {
+    if (isIndexedDBAvailable()) {
+      let token = void 0;
+      try {
+        token = await readTokenFromIndexedDB(app);
+      } catch (e2) {
+        logger2.warn(`Failed to read token from IndexedDB. Error: ${e2}`);
+      }
+      return token;
+    }
+    return void 0;
+  }
+  function writeTokenToStorage(app, token) {
+    if (isIndexedDBAvailable()) {
+      return writeTokenToIndexedDB(app, token).catch((e2) => {
+        logger2.warn(`Failed to write token to IndexedDB. Error: ${e2}`);
+      });
+    }
+    return Promise.resolve();
+  }
+  async function readOrCreateDebugTokenFromStorage(app) {
+    let existingDebugToken = void 0;
+    try {
+      existingDebugToken = await readDebugTokenFromIndexedDB();
+    } catch (_e) {
+    }
+    if (!existingDebugToken) {
+      const newToken = crypto.randomUUID();
+      let message = `To use this token for app debugging, register it with your project.
+
+Firebase App Check debug token: ${newToken}
+
+`;
+      const appId = app?.options.appId;
+      const projectId = app?.options.projectId;
+      if (projectId && appId) {
+        message += `You can do so in the Firebase Console:
+https://console.firebase.google.com/project/${projectId}/appcheck/apps?selectedAppId=${appId}
+
+Or using the Firebase CLI:
+firebase appcheck:debugtokens:create ${newToken} --project ${projectId} --app ${appId}
+
+`;
+      } else {
+        message += `You will need to add it to your app's App Check settings in the Firebase Console for it to work.
+
+`;
+      }
+      message += `Note: To keep your project secure, please revoke and delete this token using the
+Firebase Console or the CLI (\`firebase appcheck:debugtokens:delete\`) when you finish debugging.
+
+Warning: This debug token is a secret and should not be shared or uploaded to source code.
+
+Debug Token Guide: https://firebase.google.com/docs/app-check/web/debug-provider
+Firebase CLI install instructions: https://firebase.google.com/docs/cli
+`;
+      console.log(message);
+      writeDebugTokenToIndexedDB(newToken).catch((e2) => logger2.warn(`Failed to persist debug token to IndexedDB. Error: ${e2}`));
+      return newToken;
+    } else {
+      return existingDebugToken;
+    }
+  }
+  function isDebugMode() {
+    const debugState = getDebugState();
+    return debugState.enabled;
+  }
+  async function getDebugToken() {
+    const state = getDebugState();
+    if (state.enabled && state.token) {
+      return state.token.promise;
+    } else {
+      throw Error(`
+            Can't get debug token in production mode.
+        `);
+    }
+  }
+  function initializeDebugMode(app) {
+    const globals = getGlobal();
+    const debugState = getDebugState();
+    debugState.initialized = true;
+    if (typeof globals.FIREBASE_APPCHECK_DEBUG_TOKEN !== "string" && globals.FIREBASE_APPCHECK_DEBUG_TOKEN !== true) {
+      return;
+    }
+    debugState.enabled = true;
+    const deferredToken = new Deferred();
+    debugState.token = deferredToken;
+    if (typeof globals.FIREBASE_APPCHECK_DEBUG_TOKEN === "string") {
+      deferredToken.resolve(globals.FIREBASE_APPCHECK_DEBUG_TOKEN);
+    } else {
+      deferredToken.resolve(readOrCreateDebugTokenFromStorage(app));
+    }
+  }
+  var defaultTokenErrorData = { error: "UNKNOWN_ERROR" };
+  function formatDummyToken(tokenErrorData) {
+    return base64.encodeString(
+      JSON.stringify(tokenErrorData),
+      /* webSafe= */
+      false
+    );
+  }
+  async function getToken$2(appCheck, forceRefresh = false, shouldLogErrors = false) {
+    const app = appCheck.app;
+    ensureActivated(app);
+    const state = getStateReference(app);
+    let token = state.token;
+    let error = void 0;
+    if (token && !isValid(token)) {
+      state.token = void 0;
+      token = void 0;
+    }
+    if (!token) {
+      const cachedToken = await state.cachedTokenPromise;
+      if (cachedToken) {
+        if (isValid(cachedToken)) {
+          token = cachedToken;
+        } else {
+          await writeTokenToStorage(app, void 0);
+        }
+      }
+    }
+    if (!forceRefresh && token && isValid(token)) {
+      return {
+        token: token.token
+      };
+    }
+    let shouldCallListeners = false;
+    if (isDebugMode()) {
+      try {
+        const debugToken = await getDebugToken();
+        if (!state.exchangeTokenPromise) {
+          state.exchangeTokenPromise = exchangeToken(getExchangeDebugTokenRequest(app, debugToken), appCheck.heartbeatServiceProvider).finally(() => {
+            state.exchangeTokenPromise = void 0;
+          });
+          shouldCallListeners = true;
+        }
+        const tokenFromDebugExchange = await state.exchangeTokenPromise;
+        await writeTokenToStorage(app, tokenFromDebugExchange);
+        state.token = tokenFromDebugExchange;
+        return { token: tokenFromDebugExchange.token };
+      } catch (e2) {
+        if (e2.code === `appCheck/${"throttled"}` || e2.code === `appCheck/${"initial-throttle"}`) {
+          logger2.warn(e2.message);
+        } else if (shouldLogErrors) {
+          logger2.error(e2);
+        }
+        return makeDummyTokenResult(e2);
+      }
+    }
+    try {
+      if (!state.exchangeTokenPromise) {
+        state.exchangeTokenPromise = state.provider.getToken().finally(() => {
+          state.exchangeTokenPromise = void 0;
+        });
+        shouldCallListeners = true;
+      }
+      token = await getStateReference(app).exchangeTokenPromise;
+    } catch (e2) {
+      if (e2.code === `appCheck/${"throttled"}` || e2.code === `appCheck/${"initial-throttle"}`) {
+        logger2.warn(e2.message);
+      } else if (shouldLogErrors) {
+        logger2.error(e2);
+      }
+      error = e2;
+    }
+    let interopTokenResult;
+    if (!token) {
+      interopTokenResult = makeDummyTokenResult(error);
+    } else if (error) {
+      if (isValid(token)) {
+        interopTokenResult = {
+          token: token.token,
+          internalError: error
+        };
+      } else {
+        interopTokenResult = makeDummyTokenResult(error);
+      }
+    } else {
+      interopTokenResult = {
+        token: token.token
+      };
+      state.token = token;
+      await writeTokenToStorage(app, token);
+    }
+    if (shouldCallListeners) {
+      notifyTokenListeners(app, interopTokenResult);
+    }
+    return interopTokenResult;
+  }
+  async function getLimitedUseToken$1(appCheck) {
+    const app = appCheck.app;
+    ensureActivated(app);
+    const { provider } = getStateReference(app);
+    if (isDebugMode()) {
+      const debugToken = await getDebugToken();
+      const request = getExchangeDebugTokenRequest(app, debugToken);
+      request.body["limited_use"] = true;
+      const { token } = await exchangeToken(request, appCheck.heartbeatServiceProvider);
+      return { token };
+    } else {
+      const { token } = await provider.getToken(
+        true
+        /* isLimitedUse */
+      );
+      return { token };
+    }
+  }
+  function addTokenListener(appCheck, type, listener, onError) {
+    const { app } = appCheck;
+    const state = getStateReference(app);
+    const tokenObserver = {
+      next: listener,
+      error: onError,
+      type
+    };
+    state.tokenObservers = [...state.tokenObservers, tokenObserver];
+    if (state.token && isValid(state.token)) {
+      const validToken = state.token;
+      Promise.resolve().then(() => {
+        listener({ token: validToken.token });
+        initTokenRefresher(appCheck);
+      }).catch(() => {
+      });
+    }
+    void state.cachedTokenPromise.then(() => initTokenRefresher(appCheck));
+  }
+  function removeTokenListener(app, listener) {
+    const state = getStateReference(app);
+    const newObservers = state.tokenObservers.filter((tokenObserver) => tokenObserver.next !== listener);
+    if (newObservers.length === 0 && state.tokenRefresher && state.tokenRefresher.isRunning()) {
+      state.tokenRefresher.stop();
+    }
+    state.tokenObservers = newObservers;
+  }
+  function initTokenRefresher(appCheck) {
+    const { app } = appCheck;
+    const state = getStateReference(app);
+    let refresher = state.tokenRefresher;
+    if (!refresher) {
+      refresher = createTokenRefresher(appCheck);
+      state.tokenRefresher = refresher;
+    }
+    if (!refresher.isRunning() && state.isTokenAutoRefreshEnabled) {
+      refresher.start();
+    }
+  }
+  function createTokenRefresher(appCheck) {
+    const { app } = appCheck;
+    return new Refresher(
+      // Keep in mind when this fails for any reason other than the ones
+      // for which we should retry, it will effectively stop the proactive refresh.
+      async () => {
+        const state = getStateReference(app);
+        let result;
+        if (!state.token) {
+          result = await getToken$2(appCheck);
+        } else {
+          result = await getToken$2(appCheck, true);
+        }
+        if (result.error) {
+          throw result.error;
+        }
+        if (result.internalError) {
+          throw result.internalError;
+        }
+      },
+      () => {
+        return true;
+      },
+      () => {
+        const state = getStateReference(app);
+        if (state.token) {
+          let nextRefreshTimeMillis = state.token.issuedAtTimeMillis + (state.token.expireTimeMillis - state.token.issuedAtTimeMillis) * 0.5 + 5 * 60 * 1e3;
+          const latestAllowableRefresh = state.token.expireTimeMillis - 5 * 60 * 1e3;
+          nextRefreshTimeMillis = Math.min(nextRefreshTimeMillis, latestAllowableRefresh);
+          return Math.max(0, nextRefreshTimeMillis - Date.now());
+        } else {
+          return 0;
+        }
+      },
+      TOKEN_REFRESH_TIME.RETRIAL_MIN_WAIT,
+      TOKEN_REFRESH_TIME.RETRIAL_MAX_WAIT
+    );
+  }
+  function notifyTokenListeners(app, token) {
+    const observers = getStateReference(app).tokenObservers;
+    for (const observer of observers) {
+      try {
+        if (observer.type === "EXTERNAL" && token.error != null) {
+          observer.error(token.error);
+        } else {
+          observer.next(token);
+        }
+      } catch (e2) {
+      }
+    }
+  }
+  function isValid(token) {
+    return token.expireTimeMillis - Date.now() > 0;
+  }
+  function makeDummyTokenResult(error) {
+    return {
+      token: formatDummyToken(defaultTokenErrorData),
+      error
+    };
+  }
+  var AppCheckService = class {
+    constructor(app, heartbeatServiceProvider) {
+      this.app = app;
+      this.heartbeatServiceProvider = heartbeatServiceProvider;
+    }
+    _delete() {
+      const { tokenObservers } = getStateReference(this.app);
+      for (const tokenObserver of tokenObservers) {
+        removeTokenListener(this.app, tokenObserver.next);
+      }
+      return Promise.resolve();
+    }
+  };
+  function factory(app, heartbeatServiceProvider) {
+    return new AppCheckService(app, heartbeatServiceProvider);
+  }
+  function internalFactory(appCheck) {
+    return {
+      getToken: (forceRefresh) => getToken$2(appCheck, forceRefresh),
+      getLimitedUseToken: () => getLimitedUseToken$1(appCheck),
+      addTokenListener: (listener) => addTokenListener(appCheck, "INTERNAL", listener),
+      removeTokenListener: (listener) => removeTokenListener(appCheck.app, listener)
+    };
+  }
+  var name4 = "@firebase/app-check";
+  var version4 = "0.13.1";
+  var RECAPTCHA_URL = "https://www.google.com/recaptcha/api.js";
+  function initializeV3(app, siteKey) {
+    const initialized = new Deferred();
+    const state = getStateReference(app);
+    state.reCAPTCHAState = { initialized };
+    const divId = makeDiv(app);
+    const grecaptcha = getRecaptcha(false);
+    if (!grecaptcha) {
+      loadReCAPTCHAV3Script(() => {
+        const grecaptcha2 = getRecaptcha(false);
+        if (!grecaptcha2) {
+          throw new Error("no recaptcha");
+        }
+        queueWidgetRender(app, siteKey, grecaptcha2, divId, initialized);
+      });
+    } else {
+      queueWidgetRender(app, siteKey, grecaptcha, divId, initialized);
+    }
+    return initialized.promise;
+  }
+  function queueWidgetRender(app, siteKey, grecaptcha, container, initialized) {
+    grecaptcha.ready(() => {
+      renderInvisibleWidget(app, siteKey, grecaptcha, container);
+      initialized.resolve(grecaptcha);
+    });
+  }
+  function makeDiv(app) {
+    const divId = `fire_app_check_${app.name}`;
+    const invisibleDiv = document.createElement("div");
+    invisibleDiv.id = divId;
+    invisibleDiv.style.display = "none";
+    document.body.appendChild(invisibleDiv);
+    return divId;
+  }
+  async function getToken$1(app) {
+    ensureActivated(app);
+    const reCAPTCHAState = getStateReference(app).reCAPTCHAState;
+    const recaptcha = await reCAPTCHAState.initialized.promise;
+    return new Promise((resolve, _reject) => {
+      const reCAPTCHAState2 = getStateReference(app).reCAPTCHAState;
+      recaptcha.ready(() => {
+        resolve(
+          // widgetId is guaranteed to be available if reCAPTCHAState.initialized.promise resolved.
+          recaptcha.execute(reCAPTCHAState2.widgetId, {
+            action: "fire_app_check"
+          })
+        );
+      });
+    });
+  }
+  function renderInvisibleWidget(app, siteKey, grecaptcha, container) {
+    const widgetId = grecaptcha.render(container, {
+      sitekey: siteKey,
+      size: "invisible",
+      // Success callback - set state
+      callback: () => {
+        getStateReference(app).reCAPTCHAState.succeeded = true;
+      },
+      // Failure callback - set state
+      "error-callback": () => {
+        getStateReference(app).reCAPTCHAState.succeeded = false;
+      }
+    });
+    const state = getStateReference(app);
+    state.reCAPTCHAState = {
+      ...state.reCAPTCHAState,
+      // state.reCAPTCHAState is set in the initialize()
+      widgetId
+    };
+  }
+  function loadReCAPTCHAV3Script(onload) {
+    const script = document.createElement("script");
+    script.src = RECAPTCHA_URL;
+    script.onload = onload;
+    document.head.appendChild(script);
+  }
+  var ReCaptchaV3Provider = class _ReCaptchaV3Provider {
+    /**
+     * Create a ReCaptchaV3Provider instance.
+     * @param siteKey - ReCAPTCHA V3 siteKey.
+     */
+    constructor(_siteKey) {
+      this._siteKey = _siteKey;
+      this._throttleData = null;
+    }
+    /**
+     * Returns an App Check token.
+     * @internal
+     */
+    async getToken(isLimitedUse = false) {
+      throwIfThrottled(this._throttleData);
+      const attestedClaimsToken = await getToken$1(this._app).catch((_e) => {
+        throw ERROR_FACTORY2.create(
+          "recaptcha-error"
+          /* AppCheckError.RECAPTCHA_ERROR */
+        );
+      });
+      if (!getStateReference(this._app).reCAPTCHAState?.succeeded) {
+        throw ERROR_FACTORY2.create(
+          "recaptcha-error"
+          /* AppCheckError.RECAPTCHA_ERROR */
+        );
+      }
+      let result;
+      try {
+        const request = getExchangeRecaptchaV3TokenRequest(this._app, attestedClaimsToken);
+        if (isLimitedUse) {
+          request.body["limited_use"] = true;
+        }
+        result = await exchangeToken(request, this._heartbeatServiceProvider);
+      } catch (e2) {
+        if (e2.code?.includes(
+          "fetch-status-error"
+          /* AppCheckError.FETCH_STATUS_ERROR */
+        )) {
+          this._throttleData = setBackoff(Number(e2.customData?.httpStatus), this._throttleData);
+          throw ERROR_FACTORY2.create("initial-throttle", {
+            time: getDurationString(this._throttleData.allowRequestsAfter - Date.now()),
+            httpStatus: this._throttleData.httpStatus
+          });
+        } else {
+          throw e2;
+        }
+      }
+      this._throttleData = null;
+      return result;
+    }
+    /**
+     * @internal
+     */
+    initialize(app) {
+      this._app = app;
+      this._heartbeatServiceProvider = _getProvider(app, "heartbeat");
+      initializeV3(app, this._siteKey).catch(() => {
+      });
+    }
+    /**
+     * @internal
+     */
+    isEqual(otherProvider) {
+      if (otherProvider instanceof _ReCaptchaV3Provider) {
+        return this._siteKey === otherProvider._siteKey;
+      } else {
+        return false;
+      }
+    }
+  };
+  function setBackoff(httpStatus, throttleData) {
+    if (httpStatus === 404 || httpStatus === 403) {
+      return {
+        backoffCount: 1,
+        allowRequestsAfter: Date.now() + ONE_DAY,
+        httpStatus
+      };
+    } else {
+      const backoffCount = throttleData ? throttleData.backoffCount : 0;
+      const backoffMillis = calculateBackoffMillis(backoffCount, 1e3, 2);
+      return {
+        backoffCount: backoffCount + 1,
+        allowRequestsAfter: Date.now() + backoffMillis,
+        httpStatus
+      };
+    }
+  }
+  function throwIfThrottled(throttleData) {
+    if (throttleData) {
+      if (Date.now() - throttleData.allowRequestsAfter <= 0) {
+        throw ERROR_FACTORY2.create("throttled", {
+          time: getDurationString(throttleData.allowRequestsAfter - Date.now()),
+          httpStatus: throttleData.httpStatus
+        });
+      }
+    }
+  }
+  function initializeAppCheck(app = getApp(), options) {
+    app = getModularInstance(app);
+    const provider = _getProvider(app, "app-check");
+    if (!getDebugState().initialized) {
+      initializeDebugMode(app);
+    }
+    if (isDebugMode()) {
+      void getDebugToken().then((token) => {
+        console.log(`Firebase App Check debug token: ${token}`);
+      });
+    }
+    if (provider.isInitialized()) {
+      const existingInstance = provider.getImmediate();
+      const initialOptions = provider.getOptions();
+      if (initialOptions && !!initialOptions.isTokenAutoRefreshEnabled === !!options.isTokenAutoRefreshEnabled && initialOptions.provider?.isEqual(options.provider)) {
+        return existingInstance;
+      } else {
+        throw ERROR_FACTORY2.create("already-initialized", {
+          appName: app.name
+        });
+      }
+    }
+    const appCheck = provider.initialize({ options });
+    _activate(app, options.provider, options.isTokenAutoRefreshEnabled);
+    if (getStateReference(app).isTokenAutoRefreshEnabled) {
+      addTokenListener(appCheck, "INTERNAL", () => {
+      });
+    }
+    return appCheck;
+  }
+  function _activate(app, provider, isTokenAutoRefreshEnabled = false) {
+    const state = setInitialState(app, { ...DEFAULT_STATE });
+    state.activated = true;
+    state.provider = provider;
+    state.cachedTokenPromise = readTokenFromStorage(app).then((cachedToken) => {
+      if (cachedToken && isValid(cachedToken)) {
+        state.token = cachedToken;
+        notifyTokenListeners(app, { token: cachedToken.token });
+      }
+      return cachedToken;
+    });
+    state.isTokenAutoRefreshEnabled = isTokenAutoRefreshEnabled && app.automaticDataCollectionEnabled;
+    if (!app.automaticDataCollectionEnabled && isTokenAutoRefreshEnabled) {
+      logger2.warn("`isTokenAutoRefreshEnabled` is true but `automaticDataCollectionEnabled` was set to false during `initializeApp()`. This blocks automatic token refresh.");
+    }
+    state.provider.initialize(app);
+  }
+  var APP_CHECK_NAME = "app-check";
+  var APP_CHECK_NAME_INTERNAL = "app-check-internal";
+  function registerAppCheck() {
+    _registerComponent(new Component(
+      APP_CHECK_NAME,
+      (container) => {
+        const app = container.getProvider("app").getImmediate();
+        const heartbeatServiceProvider = container.getProvider("heartbeat");
+        return factory(app, heartbeatServiceProvider);
+      },
+      "PUBLIC"
+      /* ComponentType.PUBLIC */
+    ).setInstantiationMode(
+      "EXPLICIT"
+      /* InstantiationMode.EXPLICIT */
+    ).setInstanceCreatedCallback((container, _identifier, _appcheckService) => {
+      container.getProvider(APP_CHECK_NAME_INTERNAL).initialize();
+    }));
+    _registerComponent(new Component(
+      APP_CHECK_NAME_INTERNAL,
+      (container) => {
+        const appCheck = container.getProvider("app-check").getImmediate();
+        return internalFactory(appCheck);
+      },
+      "PUBLIC"
+      /* ComponentType.PUBLIC */
+    ).setInstantiationMode(
+      "EXPLICIT"
+      /* InstantiationMode.EXPLICIT */
+    ));
+    registerVersion(name4, version4);
+  }
+  registerAppCheck();
+
   // entrada.js
   window.FirebaseSync = {
     initializeApp,
@@ -34925,7 +35880,9 @@ This typically indicates that your device does not have a healthy Internet conne
     getAuth,
     signInWithEmailAndPassword,
     signOut,
-    onAuthStateChanged
+    onAuthStateChanged,
+    initializeAppCheck,
+    ReCaptchaV3Provider
   };
 })();
 /*! Bundled license information:
@@ -35034,12 +35991,6 @@ This typically indicates that your device does not have a healthy Internet conne
    *)
 
 @firebase/util/dist/index.esm.js:
-@firebase/component/dist/esm/index.esm.js:
-@firebase/app/dist/esm/index.esm.js:
-@firebase/app/dist/esm/index.esm.js:
-@firebase/firestore/dist/common-CE5hrKY-.esm.js:
-@firebase/firestore/dist/common-CE5hrKY-.esm.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
 @firebase/auth/dist/esm/index-CvXU3_1x.js:
   (**
    * @license
@@ -35057,51 +36008,6 @@ This typically indicates that your device does not have a healthy Internet conne
    * See the License for the specific language governing permissions and
    * limitations under the License.
    *)
-
-@firebase/util/dist/index.esm.js:
-firebase/app/dist/esm/index.esm.js:
-@firebase/firestore/dist/common-CE5hrKY-.esm.js:
-@firebase/firestore/dist/common-CE5hrKY-.esm.js:
-@firebase/firestore/dist/common-CE5hrKY-.esm.js:
-@firebase/firestore/dist/common-CE5hrKY-.esm.js:
-@firebase/firestore/dist/common-CE5hrKY-.esm.js:
-@firebase/firestore/dist/index.esm.js:
-@firebase/firestore/dist/index.esm.js:
-@firebase/firestore/dist/index.esm.js:
-@firebase/firestore/dist/index.esm.js:
-@firebase/firestore/dist/index.esm.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
   (**
    * @license
    * Copyright 2020 Google LLC
@@ -35139,6 +36045,30 @@ firebase/app/dist/esm/index.esm.js:
   (**
    * @license
    * Copyright 2025 Google LLC
+   *
+   * Licensed under the Apache License, Version 2.0 (the "License");
+   * you may not use this file except in compliance with the License.
+   * You may obtain a copy of the License at
+   *
+   *   http://www.apache.org/licenses/LICENSE-2.0
+   *
+   * Unless required by applicable law or agreed to in writing, software
+   * distributed under the License is distributed on an "AS IS" BASIS,
+   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   * See the License for the specific language governing permissions and
+   * limitations under the License.
+   *)
+
+@firebase/component/dist/esm/index.esm.js:
+@firebase/app/dist/esm/index.esm.js:
+@firebase/app/dist/esm/index.esm.js:
+@firebase/firestore/dist/common-CE5hrKY-.esm.js:
+@firebase/firestore/dist/common-CE5hrKY-.esm.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+  (**
+   * @license
+   * Copyright 2019 Google LLC
    *
    * Licensed under the Apache License, Version 2.0 (the "License");
    * you may not use this file except in compliance with the License.
@@ -35207,6 +36137,70 @@ firebase/app/dist/esm/index.esm.js:
   (**
    * @license
    * Copyright 2019 Google LLC
+   *
+   * Licensed under the Apache License, Version 2.0 (the "License");
+   * you may not use this file except in compliance with the License.
+   * You may obtain a copy of the License at
+   *
+   *   http://www.apache.org/licenses/LICENSE-2.0
+   *
+   * Unless required by applicable law or agreed to in writing, software
+   * distributed under the License is distributed on an "AS IS" BASIS,
+   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   * See the License for the specific language governing permissions and
+   * limitations under the License.
+   *)
+
+firebase/app/dist/esm/index.esm.js:
+@firebase/firestore/dist/common-CE5hrKY-.esm.js:
+@firebase/firestore/dist/common-CE5hrKY-.esm.js:
+@firebase/firestore/dist/common-CE5hrKY-.esm.js:
+@firebase/firestore/dist/common-CE5hrKY-.esm.js:
+@firebase/firestore/dist/common-CE5hrKY-.esm.js:
+@firebase/firestore/dist/index.esm.js:
+@firebase/firestore/dist/index.esm.js:
+@firebase/firestore/dist/index.esm.js:
+@firebase/firestore/dist/index.esm.js:
+@firebase/firestore/dist/index.esm.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/app-check/dist/esm/index.esm.js:
+@firebase/app-check/dist/esm/index.esm.js:
+@firebase/app-check/dist/esm/index.esm.js:
+@firebase/app-check/dist/esm/index.esm.js:
+  (**
+   * @license
+   * Copyright 2020 Google LLC
    *
    * Licensed under the Apache License, Version 2.0 (the "License");
    * you may not use this file except in compliance with the License.
@@ -36044,6 +37038,8 @@ re2js/build/index.js:
 
 @firebase/firestore/dist/index.esm.js:
 @firebase/auth/dist/esm/index-CvXU3_1x.js:
+@firebase/app-check/dist/esm/index.esm.js:
+@firebase/app-check/dist/esm/index.esm.js:
   (**
    * @license
    * Copyright 2021 Google LLC
@@ -36150,40 +37146,6 @@ re2js/build/index.js:
   (**
    * @license
    * Copyright 2022 Google LLC
-   *
-   * Licensed under the Apache License, Version 2.0 (the "License");
-   * you may not use this file except in compliance with the License.
-   * You may obtain a copy of the License at
-   *
-   *   http://www.apache.org/licenses/LICENSE-2.0
-   *
-   * Unless required by applicable law or agreed to in writing, software
-   * distributed under the License is distributed on an "AS IS" BASIS,
-   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   * See the License for the specific language governing permissions and
-   * limitations under the License.
-   *)
-  (**
-   * @license
-   * Copyright 2020 Google LLC
-   *
-   * Licensed under the Apache License, Version 2.0 (the "License");
-   * you may not use this file except in compliance with the License.
-   * You may obtain a copy of the License at
-   *
-   *   http://www.apache.org/licenses/LICENSE-2.0
-   *
-   * Unless required by applicable law or agreed to in writing, software
-   * distributed under the License is distributed on an "AS IS" BASIS,
-   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   * See the License for the specific language governing permissions and
-   * limitations under the License.
-   *)
-
-@firebase/auth/dist/esm/index-CvXU3_1x.js:
-  (**
-   * @license
-   * Copyright 2019 Google LLC
    *
    * Licensed under the Apache License, Version 2.0 (the "License");
    * you may not use this file except in compliance with the License.
