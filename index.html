@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>App Soporte — IH Sistemas</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+  body { background: #FBF7F0; min-height: 100vh; padding: 20px; }
+  .encabezado { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+  .icono-app { width: 44px; height: 44px; border-radius: 12px; background: #2A2118; color: white; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+  h1 { font-size: 18px; color: #2A2118; }
+  .sub { font-size: 12px; color: #9A8B76; }
+
+  .btn-nuevo { width: 100%; padding: 15px; border-radius: 14px; border: none; background: #E0632A; color: white;
+               font-weight: 700; font-size: 14.5px; margin-bottom: 22px; display: flex; align-items: center;
+               justify-content: center; gap: 8px; }
+
+  .tarjeta-cliente { background: white; border-radius: 14px; padding: 16px; margin-bottom: 10px; display: flex;
+                      align-items: center; justify-content: space-between; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+  .tarjeta-cliente .nombre { font-weight: 700; color: #2A2118; font-size: 14.5px; }
+  .tarjeta-cliente .detalle { font-size: 11.5px; color: #9A8B76; margin-top: 2px; }
+  .tarjeta-cliente .flecha { color: #DCCFBB; font-size: 18px; }
+
+  .vacio { text-align: center; padding: 50px 20px; color: #C6B9A3; }
+  .vacio .emoji { font-size: 34px; margin-bottom: 10px; }
+  .vacio p { font-size: 13px; }
+
+  /* Modal crear cliente */
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: none; align-items: flex-end; justify-content: center; z-index: 50; }
+  .modal.activo { display: flex; }
+  .modal .hoja { background: white; border-radius: 20px 20px 0 0; padding: 24px 20px 30px 20px; width: 100%; max-width: 460px; }
+  .modal h2 { font-size: 16px; color: #2A2118; margin-bottom: 16px; }
+  label { font-size: 12.5px; color: #6B5C48; font-weight: 600; display: block; margin: 12px 0 6px 0; }
+  input[type=text], input[type=number] { width: 100%; padding: 12px 14px; border-radius: 10px; border: 1.5px solid #E4E1EC; font-size: 14px; }
+  .fila-botones { display: flex; gap: 10px; margin-top: 20px; }
+  .fila-botones button { flex: 1; padding: 13px; border-radius: 12px; border: none; font-weight: 700; font-size: 13.5px; }
+  .btn-cancelar { background: #F0EEF7; color: #6B5C48; }
+  .btn-crear { background: #E0632A; color: white; }
+</style>
+</head>
+<body>
+
+<div class="pantalla-login" id="pantallaLogin" style="position:fixed; inset:0; background:#FBF7F0; display:flex; align-items:center; justify-content:center; padding:20px; z-index:200;">
+  <div class="tarjeta" style="max-width:340px; width:100%;">
+    <h2>App Soporte</h2>
+    <p style="font-size:12.5px; color:#9A8B76; margin-bottom:14px;">Inicia sesión con tu cuenta de Firebase para continuar.</p>
+    <input type="email" id="inputLoginCorreo" placeholder="Tu correo" style="width:100%; padding:11px; border-radius:9px; border:1.5px solid #E4E1EC; margin-bottom:10px;">
+    <input type="password" id="inputLoginClaveNacho" placeholder="Tu clave" style="width:100%; padding:11px; border-radius:9px; border:1.5px solid #E4E1EC; margin-bottom:10px;" onkeydown="if(event.key==='Enter') confirmarLoginNacho()">
+    <div id="errorLoginNacho" style="color:#B91C1C; font-size:12px; margin-bottom:10px;"></div>
+    <button class="btn-copiar" style="background:#E0632A; color:white; border:none; width:100%;" onclick="confirmarLoginNacho()">Entrar</button>
+  </div>
+</div>
+
+<div id="appPrincipal" style="display:none;">
+
+<div class="encabezado">
+  <div class="icono-app">🛠️</div>
+  <div>
+    <h1>App Soporte</h1>
+    <div class="sub">IH Sistemas — uso interno</div>
+  </div>
+  <button onclick="cerrarSesionNacho().then(() => location.reload())" style="margin-left:auto; background:none; border:none; color:#9A8B76; font-size:12px; cursor:pointer;">Cerrar sesión</button>
+</div>
+
+<button class="btn-nuevo" onclick="abrirModalCrear()">+ Crear cliente nuevo</button>
+
+<div id="listaClientes"></div>
+
+</div>
+
+<div class="modal" id="modalCrear">
+  <div class="hoja">
+    <h2>Nuevo cliente</h2>
+    <label>Nombre del negocio</label>
+    <input type="text" id="inputNombreCliente" placeholder="Ej: Minimarket El Sol">
+    <label>Cantidad de equipos vendidos</label>
+    <input type="number" id="inputCapacidad" value="2" min="1">
+    <label>Cantidad de usuarios permitidos</label>
+    <input type="number" id="inputCapacidadUsuarios" value="6" min="1">
+    <label>Tipo de licencia</label>
+    <select id="inputTipoLicencia" onchange="document.getElementById('campoDiasPrueba').style.display = this.value === 'trial' ? 'block' : 'none'">
+      <option value="permanente">Permanente</option>
+      <option value="trial">Prueba por días</option>
+    </select>
+    <div id="campoDiasPrueba" style="display:none;">
+      <label>Días de prueba</label>
+      <input type="number" id="inputDiasPrueba" value="15" min="1">
+    </div>
+    <div class="fila-botones">
+      <button class="btn-cancelar" onclick="cerrarModalCrear()">Cancelar</button>
+      <button class="btn-crear" onclick="confirmarCrearCliente()">Crear y generar token</button>
+    </div>
+  </div>
+</div>
+
+<script src="firebase-sync.bundle.js"></script>
+<script src="carrito_compartido.js"></script>
+<script src="motor.js"></script>
+<script>
+  inicializarFirebase();
+
+  escucharSesionNacho((usuario) => {
+    if (usuario) {
+      document.getElementById('pantallaLogin').style.display = 'none';
+      document.getElementById('appPrincipal').style.display = 'block';
+      pintarLista();
+    } else {
+      document.getElementById('pantallaLogin').style.display = 'flex';
+      document.getElementById('appPrincipal').style.display = 'none';
+    }
+  });
+
+  async function confirmarLoginNacho() {
+    const correo = document.getElementById('inputLoginCorreo').value.trim();
+    const clave = document.getElementById('inputLoginClaveNacho').value;
+    const errorDiv = document.getElementById('errorLoginNacho');
+    errorDiv.textContent = '';
+    if (!correo || !clave) { errorDiv.textContent = 'Completa correo y clave.'; return; }
+    const [ok, msg] = await iniciarSesionNacho(correo, clave);
+    if (!ok) { errorDiv.textContent = msg; return; }
+    // escucharSesionNacho ya se encarga de mostrar la app cuando el login
+    // funciona - no hace falta hacer nada mas aca.
+  }
+
+  function cargarClientesGuardados() {
+    try { return JSON.parse(localStorage.getItem("ih_soporte_clientes") || "[]"); }
+    catch (e) { return []; }
+  }
+  function guardarClientesGuardados(lista) {
+    localStorage.setItem("ih_soporte_clientes", JSON.stringify(lista));
+  }
+
+  function pintarLista() {
+    const clientes = cargarClientesGuardados();
+    const cont = document.getElementById("listaClientes");
+    if (clientes.length === 0) {
+      cont.innerHTML = `<div class="vacio"><div class="emoji">📋</div><p>Todavía no has creado ningún cliente</p></div>`;
+      return;
+    }
+    cont.innerHTML = clientes.slice().reverse().map((c) => `
+      <div class="tarjeta-cliente" onclick="location.href='cliente.html?id=${c.cliente_id}'">
+        <div>
+          <div class="nombre">${c.nombre}</div>
+          <div class="detalle">${c.capacidad} equipo(s) · creado ${c.fecha}${c.tipo_licencia === 'trial' ? ` · <span style="color:#E0632A;">prueba hasta ${c.vence}</span>` : ''}</div>
+        </div>
+        <div class="flecha">›</div>
+      </div>
+    `).join("");
+  }
+
+  function abrirModalCrear() {
+    document.getElementById("inputNombreCliente").value = "";
+    document.getElementById("inputCapacidad").value = "2";
+    document.getElementById("inputCapacidadUsuarios").value = "6";
+    document.getElementById("inputTipoLicencia").value = "permanente";
+    document.getElementById("inputDiasPrueba").value = "15";
+    document.getElementById("campoDiasPrueba").style.display = "none";
+    document.getElementById("modalCrear").classList.add("activo");
+  }
+  function cerrarModalCrear() {
+    document.getElementById("modalCrear").classList.remove("activo");
+  }
+
+  async function confirmarCrearCliente() {
+    const nombre = document.getElementById("inputNombreCliente").value.trim();
+    const capacidad = parseInt(document.getElementById("inputCapacidad").value) || 2;
+    const capacidadUsuarios = parseInt(document.getElementById("inputCapacidadUsuarios").value) || 6;
+    const tipoLicencia = document.getElementById("inputTipoLicencia").value;
+    const diasPrueba = document.getElementById("inputDiasPrueba").value;
+    if (!nombre) return;
+
+    const cliente = await crearClienteRemoto({ nombre, capacidad, capacidadUsuarios, tipoLicencia, diasPrueba });
+    const lista = cargarClientesGuardados();
+    lista.push(cliente);
+    guardarClientesGuardados(lista);
+
+    cerrarModalCrear();
+    location.href = `cliente.html?id=${cliente.cliente_id}`;
+  }
+</script>
+</body>
+</html>

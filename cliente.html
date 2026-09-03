@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cliente — App Soporte</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+  body { background: #FBF7F0; min-height: 100vh; padding: 20px; }
+  .volver { display: inline-flex; align-items: center; gap: 6px; color: #6B5C48; font-size: 13.5px; font-weight: 600; margin-bottom: 18px; }
+  h1 { font-size: 19px; color: #2A2118; margin-bottom: 2px; }
+  .sub { font-size: 12.5px; color: #9A8B76; margin-bottom: 22px; }
+
+  .tarjeta { background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+  .tarjeta h2 { font-size: 13.5px; color: #6B5C48; margin-bottom: 12px; }
+
+  #canvasQR { display: block; margin: 0 auto 14px auto; border-radius: 10px; }
+  .qr-instruccion { text-align: center; font-size: 12px; color: #9A8B76; margin-bottom: 4px; }
+
+  .separador { display: flex; align-items: center; gap: 10px; margin: 18px 0; color: #DCCFBB; font-size: 11px; }
+  .separador::before, .separador::after { content: ''; flex: 1; height: 1px; background: #EADFCC; }
+
+  .caja-texto { background: #FBF7F0; border: 1.5px dashed #DCCFBB; border-radius: 10px; padding: 12px; }
+  .caja-texto .token-texto { font-family: monospace; font-size: 11px; word-break: break-all; color: #2A2118; line-height: 1.6; }
+  .btn-copiar { width: 100%; margin-top: 10px; padding: 11px; border-radius: 9px; border: 1.5px solid #E0632A;
+                background: white; color: #E0632A; font-weight: 700; font-size: 12.5px; }
+
+  .info-cupo { display: flex; justify-content: space-between; font-size: 13px; color: #6B5C48; padding: 8px 0; }
+  .info-cupo b { color: #2A2118; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #2A2118;
+           color: white; padding: 10px 18px; border-radius: 10px; font-size: 13px; display: none; }
+</style>
+</head>
+<body>
+
+<div class="volver" onclick="location.href='index.html'">← Todos los clientes</div>
+<h1 id="nombreCliente">Cargando...</h1>
+<div class="sub" id="fechaCliente"></div>
+
+<div class="tarjeta">
+  <div class="info-cupo"><span>Capacidad de equipos</span><b id="capacidadCliente">—</b></div>
+  <div class="info-cupo"><span>Capacidad de usuarios</span><b id="capacidadUsuariosCliente">—</b></div>
+  <div class="info-cupo"><span>Licencia</span><b id="licenciaCliente">—</b></div>
+  <div class="info-cupo"><span>ID de cliente</span><b id="idCliente" style="font-family:monospace; font-size:11px;">—</b></div>
+  <button class="btn-copiar" onclick="abrirEditarCapacidad()" style="margin-top:10px;">✏️ Editar capacidad</button>
+</div>
+
+<div class="tarjeta" id="tarjetaEditarCapacidad" style="display:none;">
+  <h2>Editar capacidad</h2>
+  <p style="font-size:12px; color:#9A8B76; margin-bottom:12px;">Esto NO afecta los datos que el cliente ya tiene cargados (ventas, inventario, usuarios) — solo cambia cuánto puede usar de ahora en adelante.</p>
+  <label style="font-size:12.5px; color:#6B5C48; display:block; margin-bottom:4px;">Cantidad de equipos</label>
+  <input type="number" id="inputEditarCapacidad" min="1" style="width:100%; padding:10px; border-radius:8px; border:1.5px solid #E4E1EC; margin-bottom:10px;">
+  <label style="font-size:12.5px; color:#6B5C48; display:block; margin-bottom:4px;">Cantidad de usuarios</label>
+  <input type="number" id="inputEditarCapacidadUsuarios" min="1" style="width:100%; padding:10px; border-radius:8px; border:1.5px solid #E4E1EC; margin-bottom:14px;">
+  <button class="btn-copiar" style="background:#E0632A; color:white; border:none;" onclick="guardarEdicionCapacidad()">Guardar cambios</button>
+  <button class="btn-copiar" onclick="document.getElementById('tarjetaEditarCapacidad').style.display='none'" style="margin-top:8px;">Cancelar</button>
+</div>
+
+<div class="tarjeta">
+  <h2>Uso de Firebase (operaciones que tocan el servidor)</h2>
+  <p style="font-size:11.5px; color:#9A8B76; margin-bottom:10px;">Solo cuenta lo que gasta cupo de verdad (carritos a caja, usuarios) — "Cobrar aquí mismo" no está incluido, no gasta nada.</p>
+  <div class="info-cupo"><span>Hoy</span><b id="usoHoyCliente">—</b></div>
+  <div id="avisoUsoAlto" style="display:none; background:#FEF2F2; color:#B91C1C; font-size:12px; padding:8px 10px; border-radius:8px; margin-top:6px;"></div>
+  <div id="listaUsoDias" style="margin-top:10px; font-size:11.5px; color:#9A8B76;"></div>
+</div>
+
+<div class="tarjeta">
+  <h2>Token de activación</h2>
+  <p class="qr-instruccion">El primer equipo que lo escanee se vuelve el "maestro" de este cliente</p>
+  <canvas id="canvasQR"></canvas>
+
+  <div class="separador">O PEGAR COMO TEXTO</div>
+  <div class="caja-texto">
+    <div class="token-texto" id="tokenTexto">—</div>
+  </div>
+  <button class="btn-copiar" onclick="copiarToken()">📋 Copiar token</button>
+</div>
+
+<div class="toast" id="toast">✓ Copiado</div>
+
+<script src="firebase-sync.bundle.js"></script>
+<script src="carrito_compartido.js"></script>
+<script src="motor.js"></script>
+<script src="qrcode.js"></script>
+<script>
+  inicializarFirebase();
+
+  escucharSesionNacho((usuario) => {
+    if (!usuario) { location.href = 'index.html'; return; }
+    cargarPantalla();
+  });
+
+  let tokenActual = "";
+  let clienteActual = null;
+
+  function abrirEditarCapacidad() {
+    if (!clienteActual) return;
+    document.getElementById("inputEditarCapacidad").value = clienteActual.capacidad;
+    document.getElementById("inputEditarCapacidadUsuarios").value = clienteActual.capacidad_usuarios || 6;
+    document.getElementById("tarjetaEditarCapacidad").style.display = "block";
+  }
+
+  async function guardarEdicionCapacidad() {
+    const nuevaCapacidad = parseInt(document.getElementById("inputEditarCapacidad").value) || 1;
+    const nuevaCapacidadUsuarios = parseInt(document.getElementById("inputEditarCapacidadUsuarios").value) || 1;
+    await editarClienteRemoto(clienteActual.cliente_id, {
+      capacidad: nuevaCapacidad, capacidad_usuarios: nuevaCapacidadUsuarios,
+    });
+    document.getElementById("tarjetaEditarCapacidad").style.display = "none";
+    await cargarPantalla(); // recarga todo fresco, para confirmar que quedo guardado de verdad
+  }
+
+
+  async function cargarPantalla() {
+    const params = new URLSearchParams(location.search);
+    const id = params.get("id");
+    if (!id) {
+      document.getElementById("nombreCliente").textContent = "Cliente no encontrado";
+      return;
+    }
+
+    // Se consulta fresco al servidor, no la copia local guardada - asi esta
+    // pantalla siempre muestra el estado real, aunque haya cambiado desde
+    // otro lado despues de crearlo.
+    const [cliente, msg] = await obtenerClienteRemoto(id);
+    if (!cliente) {
+      document.getElementById("nombreCliente").textContent = "Cliente no encontrado (" + msg + ")";
+      return;
+    }
+    clienteActual = cliente;
+
+    document.getElementById("nombreCliente").textContent = cliente.nombre;
+    document.getElementById("capacidadCliente").textContent = cliente.capacidad + " equipo(s)";
+    document.getElementById("capacidadUsuariosCliente").textContent = (cliente.capacidad_usuarios || 6) + " usuario(s)";
+    document.getElementById("licenciaCliente").textContent =
+      cliente.tipo_licencia === "trial" ? `Prueba, vence ${cliente.vence}` : "Permanente";
+    document.getElementById("idCliente").textContent = cliente.cliente_id;
+
+    // El "token" ahora es simplemente el ID del cliente - no hay nada que
+    // firmar, la unica fuente de verdad es el documento en Firestore.
+    tokenActual = cliente.cliente_id;
+    document.getElementById("tokenTexto").textContent = tokenActual;
+    QRCodeLib.toCanvas(document.getElementById("canvasQR"), tokenActual, { width: 240, margin: 1 });
+
+    await cargarUso(cliente.cliente_id);
+  }
+
+  const UMBRAL_OPERACIONES_DIA = 1200; // estandar sugerido - ajustable a ojo, no es un limite real de Firebase
+  async function cargarUso(clienteId) {
+    const hoy = await obtenerUsoDeHoy(clienteId);
+    document.getElementById("usoHoyCliente").textContent = `${hoy.operaciones} operaciones`;
+
+    const porcentaje = (hoy.operaciones / UMBRAL_OPERACIONES_DIA) * 100;
+    const avisoDiv = document.getElementById("avisoUsoAlto");
+    if (porcentaje >= 80) {
+      avisoDiv.style.display = "block";
+      avisoDiv.textContent = `⚠ Hoy ya se usó el ${Math.round(porcentaje)}% del estándar sugerido (${UMBRAL_OPERACIONES_DIA}/día) — vale la pena tenerlo presente.`;
+    } else {
+      avisoDiv.style.display = "none";
+    }
+
+    const dias = await obtenerUsoUltimosDias(clienteId, 7);
+    document.getElementById("listaUsoDias").innerHTML =
+      "Últimos 7 días: " + dias.map((d) => `${d.fecha.slice(5)}: ${d.operaciones}`).join(" · ");
+  }
+
+  function copiarToken() {
+    navigator.clipboard.writeText(tokenActual).then(() => {
+      const t = document.getElementById("toast");
+      t.style.display = "block";
+      setTimeout(() => { t.style.display = "none"; }, 1600);
+    });
+  }
+</script>
+</body>
+</html>
