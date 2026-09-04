@@ -65,6 +65,12 @@
   <div id="listaUsoDias" style="margin-top:10px; font-size:11.5px; color:#9A8B76;"></div>
 </div>
 
+<div class="tarjeta" id="tarjetaPendientesBiblioteca" style="display:none;">
+  <h2>Productos que este cliente propuso</h2>
+  <p style="font-size:11.5px; color:#9A8B76; margin-bottom:12px;">Códigos de barra nuevos que no estaban en la biblioteca general. Puedes aprobarlos (con o sin la foto que mandaron) o descartarlos.</p>
+  <div id="listaPendientesBiblioteca"></div>
+</div>
+
 <div class="tarjeta">
   <h2>Token de activación</h2>
   <p class="qr-instruccion">El primer equipo que lo escanee se vuelve el "maestro" de este cliente</p>
@@ -144,6 +150,45 @@
     QRCodeLib.toCanvas(document.getElementById("canvasQR"), tokenActual, { width: 240, margin: 1 });
 
     await cargarUso(cliente.cliente_id);
+    await cargarPendientesBiblioteca(cliente.cliente_id);
+  }
+
+  async function cargarPendientesBiblioteca(clienteId) {
+    const pendientes = await listarPendientesBiblioteca(clienteId);
+    const tarjeta = document.getElementById("tarjetaPendientesBiblioteca");
+    const cont = document.getElementById("listaPendientesBiblioteca");
+    if (pendientes.length === 0) {
+      tarjeta.style.display = "none";
+      return;
+    }
+    tarjeta.style.display = "block";
+    cont.innerHTML = pendientes.map((p) => `
+      <div style="border:1.5px solid #E4E1EC; border-radius:12px; padding:12px; margin-bottom:10px;">
+        <div style="font-weight:700; font-size:14px;">${p.nombre}</div>
+        <div style="font-size:12px; color:#9A8B76; margin-bottom:8px;">Código: ${p.codigo_barra}${p.imagen_data ? " · con foto" : " · sin foto"}</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          ${p.imagen_data ? `<button class="btn-copiar" onclick="aprobarPendienteUI('${clienteId}', '${p.id}', true)" style="flex:1; min-width:140px;">✓ Aprobar con foto</button>` : ""}
+          <button class="btn-copiar" onclick="aprobarPendienteUI('${clienteId}', '${p.id}', false)" style="flex:1; min-width:140px;">✓ Aprobar sin foto</button>
+          <button class="btn-copiar" onclick="descartarPendienteUI('${clienteId}', '${p.id}')" style="flex:1; min-width:100px; color:#B91C1C;">✕ Descartar</button>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  async function aprobarPendienteUI(clienteId, itemId, incluirImagen) {
+    const pendientes = await listarPendientesBiblioteca(clienteId);
+    const item = pendientes.find((p) => p.id === itemId);
+    if (!item) return;
+    await aprobarProductoPendiente(clienteId, itemId, {
+      codigoBarra: item.codigo_barra, nombre: item.nombre, imagenData: item.imagen_data, incluirImagen,
+    });
+    await cargarPendientesBiblioteca(clienteId);
+  }
+
+  async function descartarPendienteUI(clienteId, itemId) {
+    if (!confirm("¿Descartar esta propuesta? No se va a subir a la biblioteca.")) return;
+    await descartarProductoPendiente(clienteId, itemId);
+    await cargarPendientesBiblioteca(clienteId);
   }
 
   const UMBRAL_OPERACIONES_DIA = 1200; // estandar sugerido - ajustable a ojo, no es un limite real de Firebase

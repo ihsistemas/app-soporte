@@ -20,7 +20,6 @@
 // ============================================================================
 
 const MAESTRA_SECRET = "IH-SISTEMAS-APP-MAESTRA-V1-PRIVATE-2026"; // DISTINTO al de Caja Movil y Minimarket Pro
-const MAESTRA_PREFIX = "IHCLI";
 const LARGO_FIRMA = 10; // bytes (80 bits) - mismo criterio que los otros candados
 
 const B32_ALFABETO = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";

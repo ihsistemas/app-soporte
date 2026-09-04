@@ -329,3 +329,51 @@ async function cerrarSesionNacho() {
 function escucharSesionNacho(callback) {
   FirebaseSync.onAuthStateChanged(auth, callback);
 }
+
+// ============================================================================
+// REVISION DE BIBLIOTECA - solo App Soporte. Nacho ve lo que cada cliente
+// propuso, y decide que aprobar (sube a la biblioteca general), que
+// descartar (queda marcado, no estorba mas), o que dejar tal cual esta.
+// ============================================================================
+
+async function listarPendientesBiblioteca(clienteId) {
+  const col = FirebaseSync.collection(db, 'clientes', clienteId, 'biblioteca_pendiente');
+  const consulta = FirebaseSync.query(col, FirebaseSync.where('estado', '==', 'pendiente'));
+  const snap = await FirebaseSync.getDocs(consulta);
+  const items = [];
+  snap.forEach((doc) => items.push({ id: doc.id, ...doc.data() }));
+  return items;
+}
+
+// incluirImagen=false -> solo se aprueba codigo+nombre, sin la foto que
+// mando el cliente (por si Nacho prefiere poner su propia foto despues).
+async function aprobarProductoPendiente(clienteId, itemPendienteId, { codigoBarra, nombre, imagenData, incluirImagen }) {
+  const refBiblioteca = FirebaseSync.doc(db, 'biblioteca_productos', codigoBarra);
+  await FirebaseSync.setDoc(refBiblioteca, {
+    nombre, imagen_data: incluirImagen ? (imagenData || null) : null,
+    creado_por: 'cliente', cliente_id_origen: clienteId,
+    fecha_creacion: FirebaseSync.serverTimestamp(),
+  });
+  const refPendiente = FirebaseSync.doc(db, 'clientes', clienteId, 'biblioteca_pendiente', itemPendienteId);
+  await FirebaseSync.updateDoc(refPendiente, { estado: 'aprobado' });
+}
+
+async function descartarProductoPendiente(clienteId, itemPendienteId) {
+  const ref = FirebaseSync.doc(db, 'clientes', clienteId, 'biblioteca_pendiente', itemPendienteId);
+  await FirebaseSync.updateDoc(ref, { estado: 'descartado' });
+}
+
+// Para la seccion de "editar biblioteca general en cualquier momento" -
+// busca por codigo exacto (la biblioteca puede llegar a ser grande, no se
+// lista completa sin filtro).
+async function buscarEnBiblioteca(codigoBarra) {
+  if (!codigoBarra) return null;
+  const ref = FirebaseSync.doc(db, 'biblioteca_productos', codigoBarra);
+  const snap = await FirebaseSync.getDoc(ref);
+  return snap.exists() ? { codigo_barra: snap.id, ...snap.data() } : null;
+}
+
+async function editarEntradaBiblioteca(codigoBarra, cambios) {
+  const ref = FirebaseSync.doc(db, 'biblioteca_productos', codigoBarra);
+  await FirebaseSync.updateDoc(ref, cambios);
+}
