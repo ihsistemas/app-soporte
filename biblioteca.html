@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Biblioteca de productos — App Soporte</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+  body { background: #FBF7F0; min-height: 100vh; padding: 20px; }
+  .volver { display: inline-flex; align-items: center; gap: 6px; color: #6B5C48; font-size: 13.5px; font-weight: 600; margin-bottom: 18px; text-decoration: none; }
+  h1 { font-size: 19px; color: #2A2118; margin-bottom: 2px; }
+  .sub { font-size: 12.5px; color: #9A8B76; margin-bottom: 22px; }
+
+  .tarjeta { background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+  .tarjeta h2 { font-size: 13.5px; color: #6B5C48; margin-bottom: 12px; }
+
+  input { width: 100%; padding: 11px; border-radius: 9px; border: 1.5px solid #E4E1EC; font-size: 14px; margin-bottom: 10px; }
+  .btn-copiar { width: 100%; margin-top: 4px; padding: 11px; border-radius: 9px; border: 1.5px solid #E0632A;
+                background: white; color: #E0632A; font-weight: 700; font-size: 12.5px; }
+  .btn-principal { width: 100%; margin-top: 10px; padding: 12px; border-radius: 9px; border: none;
+                   background: #E0632A; color: white; font-weight: 700; font-size: 13.5px; }
+
+  .aviso { font-size: 12.5px; padding: 10px 12px; border-radius: 8px; margin-bottom: 12px; }
+  .aviso.info { background: #FBF7F0; color: #6B5C48; }
+  .aviso.error { background: #FEF2F2; color: #B91C1C; }
+  .aviso.ok { background: #E4EFEC; color: #1F6F5C; }
+
+  .foto-preview { width: 100%; max-width: 180px; border-radius: 10px; margin: 8px auto; display: block; }
+  .fila-info { display: flex; justify-content: space-between; font-size: 12.5px; color: #9A8B76; padding: 4px 0; }
+</style>
+</head>
+<body>
+
+<a href="index.html" class="volver">← Volver a clientes</a>
+<h1>Biblioteca de productos</h1>
+<div class="sub">Busca por código de barra exacto para ver o editar una entrada.</div>
+
+<div class="tarjeta">
+  <h2>Buscar por código de barra</h2>
+  <input type="text" id="inputBuscarCodigo" placeholder="Código de barra" onkeydown="if(event.key==='Enter') buscarCodigo()">
+  <button class="btn-principal" onclick="buscarCodigo()">Buscar</button>
+  <div class="aviso info" style="margin-top:12px;">La biblioteca no se puede "listar" completa a propósito (por seguridad) — hay que buscar un código exacto para verlo.</div>
+</div>
+
+<div class="tarjeta" id="tarjetaResultado" style="display:none;">
+  <h2 id="tituloResultado">Resultado</h2>
+  <div id="contenidoResultado"></div>
+</div>
+
+<script src="firebase-sync.bundle.js"></script>
+<script src="carrito_compartido.js"></script>
+<script src="motor.js"></script>
+<script>
+  inicializarFirebase();
+  escucharSesionNacho((usuario) => {
+    if (!usuario) location.href = 'index.html';
+  });
+
+  let codigoActual = null;
+
+  async function buscarCodigo() {
+    const codigo = document.getElementById('inputBuscarCodigo').value.trim();
+    if (!codigo) return;
+    codigoActual = codigo;
+    const entrada = await buscarEnBiblioteca(codigo);
+    const tarjeta = document.getElementById('tarjetaResultado');
+    const cont = document.getElementById('contenidoResultado');
+    tarjeta.style.display = 'block';
+
+    if (!entrada) {
+      document.getElementById('tituloResultado').textContent = 'No existe';
+      cont.innerHTML = `<div class="aviso info">Ese código todavía no tiene ninguna entrada en la biblioteca.</div>`;
+      return;
+    }
+
+    document.getElementById('tituloResultado').textContent = 'Editar entrada';
+    cont.innerHTML = `
+      ${entrada.imagen_data ? `<img class="foto-preview" src="${entrada.imagen_data}">` : ''}
+      <input type="text" id="inputEditarNombre" value="${entrada.nombre.replace(/"/g, '&quot;')}" placeholder="Nombre">
+      <div class="fila-info"><span>Código</span><b>${entrada.codigo_barra}</b></div>
+      <div class="fila-info"><span>Origen</span><span>${entrada.creado_por === 'indexer' ? 'Indexer (Nacho)' : 'Aportado por un cliente'}</span></div>
+      <button class="btn-principal" onclick="guardarEdicion()">Guardar cambios</button>
+    `;
+  }
+
+  async function guardarEdicion() {
+    const nuevoNombre = document.getElementById('inputEditarNombre').value.trim();
+    if (!nuevoNombre || !codigoActual) return;
+    await editarEntradaBiblioteca(codigoActual, { nombre: nuevoNombre });
+    alert('Guardado.');
+    buscarCodigo();
+  }
+</script>
+</body>
+</html>

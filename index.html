@@ -63,7 +63,10 @@
   <button onclick="cerrarSesionNacho().then(() => location.reload())" style="margin-left:auto; background:none; border:none; color:#9A8B76; font-size:12px; cursor:pointer;">Cerrar sesión</button>
 </div>
 
-<button class="btn-nuevo" onclick="abrirModalCrear()">+ Crear cliente nuevo</button>
+<div style="display:flex; gap:8px;">
+  <button class="btn-nuevo" onclick="abrirModalCrear()" style="flex:1;">+ Crear cliente nuevo</button>
+  <a href="biblioteca.html" style="flex:0 0 auto; display:flex; align-items:center; justify-content:center; padding:0 16px; border-radius:12px; border:1.5px solid #E0632A; color:#E0632A; font-weight:700; font-size:13px; text-decoration:none;">📚 Biblioteca</a>
+</div>
 
 <div id="listaClientes"></div>
 
