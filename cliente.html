@@ -179,6 +179,20 @@
     const pendientes = await listarPendientesBiblioteca(clienteId);
     const item = pendientes.find((p) => p.id === itemId);
     if (!item) return;
+
+    // Puede pasar que 2 clientes distintos propongan el mismo codigo nuevo
+    // casi al mismo tiempo, antes de que Nacho revise ninguno - si eso
+    // pasa, avisar en vez de pisar en silencio lo que ya se habia aprobado.
+    const yaExiste = await buscarEnBiblioteca(item.codigo_barra);
+    if (yaExiste) {
+      const seguro = confirm(
+        `El código ${item.codigo_barra} ya está en la biblioteca como "${yaExiste.nombre}" ` +
+        `(probablemente otro cliente propuso lo mismo y ya lo aprobaste). ` +
+        `¿Reemplazar esa entrada con esta nueva ("${item.nombre}")?`
+      );
+      if (!seguro) return;
+    }
+
     await aprobarProductoPendiente(clienteId, itemId, {
       codigoBarra: item.codigo_barra, nombre: item.nombre, imagenData: item.imagen_data, incluirImagen,
     });
