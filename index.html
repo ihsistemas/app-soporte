@@ -113,7 +113,9 @@
 </head>
 <body>
 
-<div class="pantalla-login" id="pantallaLogin" style="position:fixed; inset:0; background:#F3F5F7; display:flex; align-items:center; justify-content:center; padding:20px; z-index:200;">
+<div id="pantallaCargando" style="position:fixed; inset:0; background:#F3F5F7; z-index:250;"></div>
+
+<div class="pantalla-login" id="pantallaLogin" style="position:fixed; inset:0; background:#F3F5F7; display:none; align-items:center; justify-content:center; padding:20px; z-index:200;">
   <div style="max-width:340px; width:100%;">
     <h2 style="font-size:19px; color:#1A2530; margin-bottom:4px;">Manager IH</h2>
     <p style="font-size:12.5px; color:#64707C; margin-bottom:14px;">Inicia sesión con tu cuenta de Firebase para continuar.</p>
@@ -273,6 +275,7 @@
   const seleccionados = new Set();
 
   escucharSesionNacho((usuario) => {
+    document.getElementById('pantallaCargando').style.display = 'none';
     if (usuario) {
       document.getElementById('pantallaLogin').style.display = 'none';
       document.getElementById('appPrincipal').style.display = 'flex';
