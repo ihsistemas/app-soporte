@@ -3,73 +3,224 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>App Soporte — IH Sistemas</title>
+<title>Manager IH</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
-  body { background: #FBF7F0; min-height: 100vh; padding: 20px; }
-  .encabezado { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
-  .icono-app { width: 44px; height: 44px; border-radius: 12px; background: #2A2118; color: white; display: flex; align-items: center; justify-content: center; font-size: 20px; }
-  h1 { font-size: 18px; color: #2A2118; }
-  .sub { font-size: 12px; color: #9A8B76; }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'IBM Plex Sans', -apple-system, system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+  body { background: #F3F5F7; min-height: 100vh; }
+  .mono { font-family: 'IBM Plex Mono', monospace; }
 
-  .btn-nuevo { width: 100%; padding: 15px; border-radius: 14px; border: none; background: #E0632A; color: white;
-               font-weight: 700; font-size: 14.5px; margin-bottom: 22px; display: flex; align-items: center;
-               justify-content: center; gap: 8px; }
+  #appPrincipal { display: flex; min-height: 100vh; }
 
-  .tarjeta-cliente { background: white; border-radius: 14px; padding: 16px; margin-bottom: 10px; display: flex;
-                      align-items: center; justify-content: space-between; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
-  .tarjeta-cliente .nombre { font-weight: 700; color: #2A2118; font-size: 14.5px; }
-  .tarjeta-cliente .detalle { font-size: 11.5px; color: #9A8B76; margin-top: 2px; }
-  .tarjeta-cliente .flecha { color: #DCCFBB; font-size: 18px; }
+  /* Barra lateral */
+  #sidebar { width: 280px; flex: 0 0 280px; background: #182029; display: flex; flex-direction: column;
+             padding: 26px 18px; gap: 30px; position: relative; overflow: hidden; }
+  #sidebar::before { content: ''; position: absolute; inset: 0; opacity: .05; pointer-events: none;
+    background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px);
+    background-size: 24px 24px; }
+  .marca { display: flex; align-items: center; gap: 12px; position: relative; }
+  .marca .nombre { font-weight: 700; font-size: 15px; color: #fff; line-height: 1.2; }
+  .marca .sub { font-size: 11px; color: #7C8998; line-height: 1.2; letter-spacing: .3px; }
 
-  .vacio { text-align: center; padding: 50px 20px; color: #C6B9A3; }
+  .nav-seccion { font-size: 10.5px; font-weight: 700; letter-spacing: .8px; color: #5B6675; padding: 0 10px 8px 10px; }
+  .nav-programas { display: flex; flex-direction: column; gap: 3px; position: relative; }
+  .nav-item { display: flex; align-items: center; gap: 11px; padding: 11px 12px; border-radius: 10px; font-weight: 600;
+              font-size: 13.5px; color: #5B6675; border: none; background: none; text-align: left; cursor: pointer; width: 100%; }
+  .nav-item.activo { background: #2E4374; color: #fff; }
+  .nav-item.proximamente { cursor: default; }
+  .nav-item .badge-count { margin-left: auto; background: rgba(255,255,255,.18); color: #fff; font-size: 10.5px;
+                            font-weight: 700; padding: 2px 7px; border-radius: 99px; }
+  .nav-item .etiqueta-pronto { margin-left: auto; font-size: 10px; font-weight: 700; color: #495363; }
+
+  #piePagina { margin-top: auto; display: flex; flex-direction: column; gap: 2px; border-top: 1px solid rgba(255,255,255,.08);
+               padding-top: 16px; position: relative; }
+  .link-sidebar { display: flex; align-items: center; gap: 11px; padding: 9px 12px; border-radius: 9px; font-size: 13px;
+                  font-weight: 600; text-decoration: none; color: #9AA6B4; }
+
+  /* Contenido principal */
+  #contenido { flex: 1; padding: 36px 44px 100px 44px; display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+  .encabezado-programa { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .kicker { font-size: 11.5px; font-weight: 700; letter-spacing: .6px; color: #96A2AC; margin-bottom: 6px; }
+  .titulo-programa { font-size: 26px; font-weight: 700; }
+
+  .btn-primario { padding: 12px 20px; border-radius: 10px; border: none; background: #1A2530; color: #fff; font-weight: 700;
+                  font-size: 13.5px; display: flex; align-items: center; gap: 9px; cursor: pointer; white-space: nowrap; }
+
+  /* Hero de uso */
+  .hero-uso { display: grid; grid-template-columns: 1.5fr 1fr; gap: 18px; }
+  .tarjeta-medidor { background: #fff; border: 1px solid #E3E7EC; border-radius: 14px; padding: 26px 28px; display: flex;
+                     flex-direction: column; gap: 18px; }
+  .tarjeta-medidor .num-grande { font-size: 52px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .segmentos { display: flex; gap: 3px; align-items: center; flex-wrap: wrap; }
+  .seg { width: 7px; height: 22px; border-radius: 2px; flex: 0 0 auto; background: #E3E7EC; }
+  .stats-lado { display: flex; flex-direction: column; gap: 18px; }
+  .stat-lado { border-radius: 14px; padding: 20px 24px; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  .stat-lado.oscuro { background: #1A2530; color: #fff; }
+  .stat-lado.claro { background: #fff; border: 1px solid #E3E7EC; color: #1A2530; }
+  .stat-lado .num { font-size: 32px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+
+  /* Lista de clientes */
+  .fila-seccion { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
+  .fila-cliente { display: flex; align-items: center; gap: 16px; background: #fff; border: 1px solid #E3E7EC;
+                  border-radius: 12px; padding: 14px 18px; cursor: pointer; flex-wrap: wrap; }
+  .fila-cliente:hover { background: #FAFBFC; }
+  .avatar-cliente { width: 40px; height: 40px; border-radius: 10px; flex: 0 0 auto; display: flex; align-items: center;
+                    justify-content: center; font-weight: 700; font-size: 13px; background: #fff; border: 2.5px solid; }
+  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 7px; font-size: 11.5px;
+           font-weight: 600; white-space: nowrap; }
+
+  .vacio { text-align: center; padding: 50px 20px; color: #96A2AC; }
   .vacio .emoji { font-size: 34px; margin-bottom: 10px; }
   .vacio p { font-size: 13px; }
+
+  /* Barra de seleccion flotante */
+  #barraSeleccion { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 30;
+                    background: #1A2530; color: #fff; border-radius: 14px; padding: 14px 18px; display: none;
+                    align-items: center; gap: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.25); max-width: calc(100% - 32px); }
+  #barraSeleccion.activa { display: flex; }
+  #barraSeleccion button { padding: 9px 14px; border-radius: 9px; border: none; font-weight: 700; font-size: 12.5px; cursor: pointer; }
 
   /* Modal crear cliente */
   .modal { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: none; align-items: flex-end; justify-content: center; z-index: 50; }
   .modal.activo { display: flex; }
   .modal .hoja { background: white; border-radius: 20px 20px 0 0; padding: 24px 20px 30px 20px; width: 100%; max-width: 460px; }
-  .modal h2 { font-size: 16px; color: #2A2118; margin-bottom: 16px; }
-  label { font-size: 12.5px; color: #6B5C48; font-weight: 600; display: block; margin: 12px 0 6px 0; }
-  input[type=text], input[type=number] { width: 100%; padding: 12px 14px; border-radius: 10px; border: 1.5px solid #E4E1EC; font-size: 14px; }
+  .modal h2 { font-size: 16px; color: #1A2530; margin-bottom: 16px; }
+  label { font-size: 12.5px; color: #64707C; font-weight: 600; display: block; margin: 12px 0 6px 0; }
+  input[type=text], input[type=number] { width: 100%; padding: 12px 14px; border-radius: 10px; border: 1.5px solid #DCE2E7; font-size: 14px; }
   .fila-botones { display: flex; gap: 10px; margin-top: 20px; }
   .fila-botones button { flex: 1; padding: 13px; border-radius: 12px; border: none; font-weight: 700; font-size: 13.5px; }
-  .btn-cancelar { background: #F0EEF7; color: #6B5C48; }
-  .btn-crear { background: #E0632A; color: white; }
+  .btn-cancelar { background: #F3F5F7; color: #64707C; }
+  .btn-crear { background: #2E4374; color: white; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1A2530; color: white;
+           padding: 10px 18px; border-radius: 10px; font-size: 13px; display: none; z-index: 60; }
+
+  /* Celular: la barra lateral pasa a ser una barra superior */
+  @media (max-width: 860px) {
+    #appPrincipal { flex-direction: column; }
+    #sidebar { width: 100%; flex: 0 0 auto; flex-direction: row; flex-wrap: wrap; align-items: center; padding: 16px; gap: 14px; }
+    .nav-programas { flex-direction: row; flex-wrap: wrap; }
+    #piePagina { margin-top: 0; border-top: none; padding-top: 0; flex-direction: row; align-items: center; margin-left: auto; }
+    .link-sidebar span { display: none; }
+    .nav-seccion { display: none; }
+    #contenido { padding: 24px 16px 110px 16px; }
+    .hero-uso { grid-template-columns: 1fr; }
+    .tarjeta-medidor .num-grande { font-size: 40px; }
+    .fila-cliente { padding: 12px 14px; }
+  }
 </style>
 </head>
 <body>
 
-<div class="pantalla-login" id="pantallaLogin" style="position:fixed; inset:0; background:#FBF7F0; display:flex; align-items:center; justify-content:center; padding:20px; z-index:200;">
-  <div class="tarjeta" style="max-width:340px; width:100%;">
-    <h2>App Soporte</h2>
-    <p style="font-size:12.5px; color:#9A8B76; margin-bottom:14px;">Inicia sesión con tu cuenta de Firebase para continuar.</p>
-    <input type="email" id="inputLoginCorreo" placeholder="Tu correo" style="width:100%; padding:11px; border-radius:9px; border:1.5px solid #E4E1EC; margin-bottom:10px;">
-    <input type="password" id="inputLoginClaveNacho" placeholder="Tu clave" style="width:100%; padding:11px; border-radius:9px; border:1.5px solid #E4E1EC; margin-bottom:10px;" onkeydown="if(event.key==='Enter') confirmarLoginNacho()">
-    <div id="errorLoginNacho" style="color:#B91C1C; font-size:12px; margin-bottom:10px;"></div>
-    <button class="btn-copiar" style="background:#E0632A; color:white; border:none; width:100%;" onclick="confirmarLoginNacho()">Entrar</button>
+<div class="pantalla-login" id="pantallaLogin" style="position:fixed; inset:0; background:#F3F5F7; display:flex; align-items:center; justify-content:center; padding:20px; z-index:200;">
+  <div style="max-width:340px; width:100%;">
+    <h2 style="font-size:19px; color:#1A2530; margin-bottom:4px;">Manager IH</h2>
+    <p style="font-size:12.5px; color:#64707C; margin-bottom:14px;">Inicia sesión con tu cuenta de Firebase para continuar.</p>
+    <input type="email" id="inputLoginCorreo" placeholder="Tu correo" style="width:100%; padding:11px; border-radius:9px; border:1.5px solid #DCE2E7; margin-bottom:10px;">
+    <input type="password" id="inputLoginClaveNacho" placeholder="Tu clave" style="width:100%; padding:11px; border-radius:9px; border:1.5px solid #DCE2E7; margin-bottom:10px;" onkeydown="if(event.key==='Enter') confirmarLoginNacho()">
+    <div id="errorLoginNacho" style="color:#C5433A; font-size:12px; margin-bottom:10px;"></div>
+    <button style="background:#1A2530; color:white; border:none; width:100%; padding:12px; border-radius:10px; font-weight:700; font-size:13.5px;" onclick="confirmarLoginNacho()">Entrar</button>
   </div>
 </div>
 
 <div id="appPrincipal" style="display:none;">
 
-<div class="encabezado">
-  <div class="icono-app">🛠️</div>
-  <div>
-    <h1>App Soporte</h1>
-    <div class="sub">IH Sistemas — uso interno</div>
+  <div id="sidebar">
+    <div class="marca">
+      <svg width="40" height="40" viewBox="0 0 40 40" style="flex:0 0 auto;">
+        <rect x="1" y="1" width="38" height="38" rx="10" fill="#2E4374"/>
+        <rect x="8" y="9" width="6" height="22" rx="1.5" fill="#fff"/>
+        <rect x="26" y="9" width="6" height="22" rx="1.5" fill="#fff"/>
+        <rect x="8" y="17" width="24" height="6" rx="1.5" fill="#fff"/>
+      </svg>
+      <div>
+        <div class="nombre">Manager IH</div>
+        <div class="sub">IH SISTEMAS · ARICA</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="nav-seccion">PROGRAMAS</div>
+      <div class="nav-programas" id="navProgramas"></div>
+    </div>
+
+    <div id="piePagina">
+      <a href="biblioteca.html" class="link-sidebar">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9AA6B4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5.8c0-.6.4-1 1-1.1a29 29 0 0 1 7 0v14.6a29 29 0 0 0-7 0c-.6 0-1-.4-1-.9z"/><path d="M12 4.7a29 29 0 0 1 7 0c.6.1 1 .5 1 1.1v13.7a29 29 0 0 0-7 0"/></svg>
+        <span>Biblioteca de productos</span>
+      </a>
+      <div style="display:flex; align-items:center; gap:11px; padding:10px 12px; margin-top:8px;">
+        <div style="width:32px; height:32px; border-radius:9px; background:#2E4374; color:#fff; font-weight:700; font-size:12.5px; display:flex; align-items:center; justify-content:center; flex:0 0 auto;">N</div>
+        <div style="display:flex; flex-direction:column; flex:1; min-width:0;">
+          <div style="font-size:12.5px; font-weight:600; color:#fff; white-space:nowrap;">Nacho Huerta</div>
+          <a href="#" onclick="cerrarSesionNacho().then(() => location.reload())" style="font-size:11px; color:#7C8998; text-decoration:none;">Cerrar sesión</a>
+        </div>
+      </div>
+    </div>
   </div>
-  <button onclick="cerrarSesionNacho().then(() => location.reload())" style="margin-left:auto; background:none; border:none; color:#9A8B76; font-size:12px; cursor:pointer;">Cerrar sesión</button>
+
+  <div id="contenido">
+
+    <div class="encabezado-programa">
+      <div>
+        <div class="kicker">PROGRAMA ACTIVO</div>
+        <div class="titulo-programa" id="tituloPrograma">Minimarket</div>
+      </div>
+      <button class="btn-primario" onclick="abrirModalCrear()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Crear cliente nuevo
+      </button>
+    </div>
+
+    <div class="hero-uso" id="tarjetaUsoTotal" style="display:none;">
+      <div class="tarjeta-medidor">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+          <div>
+            <div style="font-size:12.5px; color:#64707C; font-weight:600;">Uso total de hoy — todos los clientes</div>
+            <div style="display:flex; align-items:baseline; gap:10px; margin-top:8px;">
+              <div class="num-grande" id="usoTotalTexto">0</div>
+              <div style="font-size:13px; color:#96A2AC; font-weight:600;">operaciones</div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div id="usoTotalPorcentaje" style="font-size:22px; font-weight:700; color:#1A2530;">0%</div>
+            <div style="font-size:11px; color:#96A2AC;">del estándar diario</div>
+          </div>
+        </div>
+        <div class="segmentos" id="segmentosUso"></div>
+        <div id="avisoUsoTotalAlto" style="display:none; font-size:12px; color:#C5433A; font-weight:600; align-items:center; gap:6px;"></div>
+      </div>
+      <div class="stats-lado">
+        <div class="stat-lado oscuro">
+          <div style="font-size:12px; color:#9AA6B4; font-weight:600;">Clientes activos</div>
+          <div class="num" id="statClientesActivos">0</div>
+        </div>
+        <div class="stat-lado claro">
+          <div style="font-size:12px; color:#64707C; font-weight:600;">Cupo estimado</div>
+          <div class="num" id="estimadoCupo">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fila-seccion">
+      <div style="font-size:15px; font-weight:700;">Clientes</div>
+      <div id="contadorClientes" style="font-size:12px; color:#96A2AC;"></div>
+    </div>
+
+    <div id="listaClientes"></div>
+
+  </div>
+
 </div>
 
-<div style="display:flex; gap:8px;">
-  <button class="btn-nuevo" onclick="abrirModalCrear()" style="flex:1;">+ Crear cliente nuevo</button>
-  <a href="biblioteca.html" style="flex:0 0 auto; display:flex; align-items:center; justify-content:center; padding:0 16px; border-radius:12px; border:1.5px solid #E0632A; color:#E0632A; font-weight:700; font-size:13px; text-decoration:none;">📚 Biblioteca</a>
-</div>
-
-<div id="listaClientes"></div>
-
+<div class="barra-seleccion" id="barraSeleccion">
+  <span id="textoSeleccion">0 seleccionados</span>
+  <div style="display:flex; gap:8px;">
+    <button style="background:#4C7A3F; color:white;" onclick="aplicarModuloSeleccionUI(true)">Activar módulo</button>
+    <button style="background:#C5433A; color:white;" onclick="aplicarModuloSeleccionUI(false)">Desactivar módulo</button>
+    <button style="background:rgba(255,255,255,.15); color:white;" onclick="limpiarSeleccion()">Cancelar</button>
+  </div>
 </div>
 
 <div class="modal" id="modalCrear">
@@ -97,17 +248,36 @@
   </div>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script src="firebase-sync.bundle.js"></script>
 <script src="carrito_compartido.js"></script>
+<script src="modal_historial.js"></script>
 <script src="motor.js"></script>
 <script>
   inicializarFirebase();
 
+  // Programas existentes - agregar uno nuevo el día que exista de verdad
+  // (Parking, Control de Acceso) es sumar un objeto acá, no rehacer la
+  // pantalla. El icono por defecto se usa para cualquier programa futuro
+  // que todavía no tenga uno propio dibujado.
+  const ICONO_DEFECTO = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#495363" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>';
+  const PROGRAMAS = [
+    {
+      key: 'minimarket', nombre: 'Minimarket', disponible: true,
+      icono: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{color}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8l1.2-4h13.6L20 8"/><path d="M4 8h16v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M9 12a3 3 0 0 0 6 0"/></svg>',
+    },
+  ];
+  let tabActiva = PROGRAMAS[0].key;
+  let todosLosClientes = [];
+  const seleccionados = new Set();
+
   escucharSesionNacho((usuario) => {
     if (usuario) {
       document.getElementById('pantallaLogin').style.display = 'none';
-      document.getElementById('appPrincipal').style.display = 'block';
-      pintarLista();
+      document.getElementById('appPrincipal').style.display = 'flex';
+      pintarNav();
+      cargarTodo();
     } else {
       document.getElementById('pantallaLogin').style.display = 'flex';
       document.getElementById('appPrincipal').style.display = 'none';
@@ -122,34 +292,159 @@
     if (!correo || !clave) { errorDiv.textContent = 'Completa correo y clave.'; return; }
     const [ok, msg] = await iniciarSesionNacho(correo, clave);
     if (!ok) { errorDiv.textContent = msg; return; }
-    // escucharSesionNacho ya se encarga de mostrar la app cuando el login
-    // funciona - no hace falta hacer nada mas aca.
   }
 
-  function cargarClientesGuardados() {
-    try { return JSON.parse(localStorage.getItem("ih_soporte_clientes") || "[]"); }
-    catch (e) { return []; }
+  async function cargarTodo() {
+    todosLosClientes = await listarTodosLosClientes();
+    pintarNav();
+    pintarLista();
+    pintarUsoTotal();
   }
-  function guardarClientesGuardados(lista) {
-    localStorage.setItem("ih_soporte_clientes", JSON.stringify(lista));
+
+  function pintarNav() {
+    document.getElementById('tituloPrograma').textContent = PROGRAMAS.find((p) => p.key === tabActiva).nombre;
+    document.getElementById('navProgramas').innerHTML = PROGRAMAS.map((p) => {
+      const activo = p.key === tabActiva;
+      const color = activo ? '#fff' : '#495363';
+      const icono = (p.icono || ICONO_DEFECTO).replace('{{color}}', color);
+      const cantidad = todosLosClientes.filter((c) => c.modulos && c.modulos[p.key]).length;
+      const derecha = p.disponible
+        ? (cantidad > 0 ? `<span class="badge-count">${cantidad}</span>` : '')
+        : `<span class="etiqueta-pronto">PRONTO</span>`;
+      return `
+        <button class="nav-item ${activo ? 'activo' : ''} ${p.disponible ? '' : 'proximamente'}"
+                onclick="${p.disponible ? `cambiarTab('${p.key}')` : ''}">
+          ${icono}
+          <span>${p.nombre}</span>
+          ${derecha}
+        </button>
+      `;
+    }).join('');
+  }
+
+  function cambiarTab(key) {
+    tabActiva = key;
+    limpiarSeleccion();
+    pintarNav();
+    pintarLista();
+    pintarUsoTotal();
+  }
+
+  function clientesDelTab() {
+    return todosLosClientes.filter((c) => c.modulos && c.modulos[tabActiva]);
+  }
+
+  function inicialesDe(nombre) {
+    return (nombre || '').trim().split(/\s+/).slice(0, 2).map((p) => p[0]).join('').toUpperCase() || '?';
   }
 
   function pintarLista() {
-    const clientes = cargarClientesGuardados();
+    const clientes = clientesDelTab();
+    document.getElementById('contadorClientes').textContent = clientes.length ? `${clientes.length} de ${clientes.length}` : '';
     const cont = document.getElementById("listaClientes");
     if (clientes.length === 0) {
-      cont.innerHTML = `<div class="vacio"><div class="emoji">📋</div><p>Todavía no has creado ningún cliente</p></div>`;
+      cont.innerHTML = `<div class="vacio"><div class="emoji">📋</div><p>Todavía no hay clientes en este programa</p></div>`;
       return;
     }
-    cont.innerHTML = clientes.slice().reverse().map((c) => `
-      <div class="tarjeta-cliente" onclick="location.href='cliente.html?id=${c.cliente_id}'">
-        <div>
-          <div class="nombre">${c.nombre}</div>
-          <div class="detalle">${c.capacidad} equipo(s) · creado ${c.fecha}${c.tipo_licencia === 'trial' ? ` · <span style="color:#E0632A;">prueba hasta ${c.vence}</span>` : ''}</div>
+    cont.innerHTML = `<div style="display:flex; flex-direction:column; gap:10px;">` + clientes.map((c) => {
+      const esTrial = c.tipo_licencia === 'trial';
+      const colorEstado = esTrial ? '#9A6B12' : '#3F7A4C';
+      const badge = esTrial
+        ? `<span class="badge" style="background:#FBF1DD; color:#9A6B12;">Prueba · vence ${c.vence || '—'}</span>`
+        : `<span class="badge" style="background:#EDF3EE; color:#3F7A4C;">Permanente</span>`;
+      return `
+        <div class="fila-cliente" onclick="if(event.target.type!=='checkbox') location.href='cliente.html?id=${c.cliente_id}'">
+          <input type="checkbox" ${seleccionados.has(c.cliente_id) ? 'checked' : ''}
+                 onclick="event.stopPropagation(); alternarSeleccion('${c.cliente_id}')">
+          <div class="avatar-cliente" style="color:${colorEstado}; border-color:${colorEstado};">${inicialesDe(c.nombre)}</div>
+          <div style="flex:1; min-width:160px;">
+            <div style="font-weight:700; font-size:14.5px;">${c.nombre}</div>
+            <div class="mono" style="font-size:11px; color:#96A2AC; margin-top:1px;">${c.cliente_id}</div>
+          </div>
+          <div style="width:90px; font-size:13px; color:#64707C;">${c.capacidad || 0} equipos</div>
+          ${badge}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7CDD3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
         </div>
-        <div class="flecha">›</div>
-      </div>
-    `).join("");
+      `;
+    }).join('') + `</div>`;
+  }
+
+  function alternarSeleccion(clienteId) {
+    if (seleccionados.has(clienteId)) seleccionados.delete(clienteId); else seleccionados.add(clienteId);
+    document.getElementById('barraSeleccion').classList.toggle('activa', seleccionados.size > 0);
+    document.getElementById('textoSeleccion').textContent = `${seleccionados.size} seleccionado(s)`;
+  }
+
+  function limpiarSeleccion() {
+    seleccionados.clear();
+    document.getElementById('barraSeleccion').classList.remove('activa');
+    pintarLista();
+  }
+
+  // Aplica el cambio SOLO a los clientes marcados - nunca a todos de una,
+  // aunque la pestaña tenga más clientes sin marcar.
+  async function aplicarModuloSeleccionUI(activar) {
+    const idsElegidos = Array.from(seleccionados);
+    if (idsElegidos.length === 0) return;
+    if (!confirm(`¿${activar ? 'Activar' : 'Desactivar'} el módulo "${tabActiva}" para ${idsElegidos.length} cliente(s) elegido(s)?`)) return;
+    for (const id of idsElegidos) {
+      await editarClienteRemoto(id, { [`modulos.${tabActiva}`]: activar });
+    }
+    limpiarSeleccion();
+    await cargarTodo();
+    mostrarToastIndex(`Módulo actualizado en ${idsElegidos.length} cliente(s).`);
+  }
+
+  function mostrarToastIndex(texto) {
+    const t = document.getElementById("toast");
+    t.textContent = texto;
+    t.style.display = "block";
+    setTimeout(() => { t.style.display = "none"; }, 2000);
+  }
+
+  // Aproximado propio (suma el contador que ya se guarda por cliente) - NO
+  // es el número real que usa Firebase para facturar, ese solo se ve desde
+  // la consola de Firebase o con un servidor propio.
+  const UMBRAL_GLOBAL_OPERACIONES_DIA = 15000;
+  const SEGMENTOS_MEDIDOR = 24;
+  async function pintarUsoTotal() {
+    const clientes = clientesDelTab();
+    const tarjeta = document.getElementById('tarjetaUsoTotal');
+    if (clientes.length === 0) { tarjeta.style.display = 'none'; return; }
+    tarjeta.style.display = 'grid';
+
+    const usos = await Promise.all(clientes.map(async (c) => ({
+      cliente_id: c.cliente_id, operaciones: (await obtenerUsoDeHoy(c.cliente_id)).operaciones || 0,
+    })));
+    const total = usos.reduce((acc, u) => acc + u.operaciones, 0);
+    const porcentaje = Math.min(100, Math.round((total / UMBRAL_GLOBAL_OPERACIONES_DIA) * 100));
+
+    document.getElementById('usoTotalTexto').textContent = total;
+    document.getElementById('usoTotalPorcentaje').textContent = `${porcentaje}%`;
+    document.getElementById('usoTotalPorcentaje').style.color = porcentaje >= 80 ? '#C5433A' : '#1A2530';
+    document.getElementById('statClientesActivos').textContent = clientes.length;
+
+    const llenos = Math.round((porcentaje / 100) * SEGMENTOS_MEDIDOR);
+    const colorLleno = porcentaje >= 80 ? '#C5433A' : '#2E4374';
+    document.getElementById('segmentosUso').innerHTML = Array.from({ length: SEGMENTOS_MEDIDOR })
+      .map((_, i) => `<div class="seg" style="background:${i < llenos ? colorLleno : '#E3E7EC'};"></div>`).join('');
+
+    const avisoDiv = document.getElementById('avisoUsoTotalAlto');
+    if (porcentaje >= 80) {
+      avisoDiv.style.display = 'flex';
+      avisoDiv.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C5433A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.6 18a1.8 1.8 0 0 0 1.6 2.7h15.6a1.8 1.8 0 0 0 1.6-2.7L13.7 3.9a1.8 1.8 0 0 0-3.4 0z"/></svg> Estás cerca del ${porcentaje}% del uso diario estimado.`;
+    } else {
+      avisoDiv.style.display = 'none';
+    }
+
+    const promedioPorCliente = clientes.length > 0 ? total / clientes.length : 0;
+    const estimadoDiv = document.getElementById('estimadoCupo');
+    if (promedioPorCliente > 0 && total < UMBRAL_GLOBAL_OPERACIONES_DIA) {
+      const restante = UMBRAL_GLOBAL_OPERACIONES_DIA - total;
+      estimadoDiv.textContent = `~${Math.floor(restante / promedioPorCliente)} más`;
+    } else {
+      estimadoDiv.textContent = '—';
+    }
   }
 
   function abrirModalCrear() {
@@ -173,10 +468,9 @@
     const diasPrueba = document.getElementById("inputDiasPrueba").value;
     if (!nombre) return;
 
-    const cliente = await crearClienteRemoto({ nombre, capacidad, capacidadUsuarios, tipoLicencia, diasPrueba });
-    const lista = cargarClientesGuardados();
-    lista.push(cliente);
-    guardarClientesGuardados(lista);
+    // El cliente se crea ya marcado con el módulo de la pestaña donde
+    // estabas parado - así no hace falta un selector aparte en el modal.
+    const cliente = await crearClienteRemoto({ nombre, capacidad, capacidadUsuarios, tipoLicencia, diasPrueba, modulo: tabActiva });
 
     cerrarModalCrear();
     location.href = `cliente.html?id=${cliente.cliente_id}`;

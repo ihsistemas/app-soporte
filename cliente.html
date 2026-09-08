@@ -3,84 +3,229 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cliente — App Soporte</title>
+<title>Cliente — Manager IH</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
-  body { background: #FBF7F0; min-height: 100vh; padding: 20px; }
-  .volver { display: inline-flex; align-items: center; gap: 6px; color: #6B5C48; font-size: 13.5px; font-weight: 600; margin-bottom: 18px; }
-  h1 { font-size: 19px; color: #2A2118; margin-bottom: 2px; }
-  .sub { font-size: 12.5px; color: #9A8B76; margin-bottom: 22px; }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'IBM Plex Sans', -apple-system, system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+  body { background: #F3F5F7; min-height: 100vh; }
+  .mono { font-family: 'IBM Plex Mono', monospace; }
 
-  .tarjeta { background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
-  .tarjeta h2 { font-size: 13.5px; color: #6B5C48; margin-bottom: 12px; }
+  #appPrincipal { display: flex; min-height: 100vh; }
 
-  #canvasQR { display: block; margin: 0 auto 14px auto; border-radius: 10px; }
-  .qr-instruccion { text-align: center; font-size: 12px; color: #9A8B76; margin-bottom: 4px; }
+  #sidebar { width: 280px; flex: 0 0 280px; background: #182029; display: flex; flex-direction: column;
+             padding: 26px 18px; gap: 30px; position: relative; overflow: hidden; }
+  #sidebar::before { content: ''; position: absolute; inset: 0; opacity: .05; pointer-events: none;
+    background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px);
+    background-size: 24px 24px; }
+  .marca { display: flex; align-items: center; gap: 12px; position: relative; }
+  .marca .nombre { font-weight: 700; font-size: 15px; color: #fff; line-height: 1.2; }
+  .marca .sub { font-size: 11px; color: #7C8998; line-height: 1.2; letter-spacing: .3px; }
 
-  .separador { display: flex; align-items: center; gap: 10px; margin: 18px 0; color: #DCCFBB; font-size: 11px; }
-  .separador::before, .separador::after { content: ''; flex: 1; height: 1px; background: #EADFCC; }
+  .nav-seccion { font-size: 10.5px; font-weight: 700; letter-spacing: .8px; color: #5B6675; padding: 0 10px 8px 10px; }
+  .nav-item { display: flex; align-items: center; gap: 11px; padding: 11px 12px; border-radius: 10px; font-weight: 600;
+              font-size: 13.5px; color: #5B6675; text-decoration: none; }
+  .nav-item.activo { background: #2E4374; color: #fff; }
 
-  .caja-texto { background: #FBF7F0; border: 1.5px dashed #DCCFBB; border-radius: 10px; padding: 12px; }
-  .caja-texto .token-texto { font-family: monospace; font-size: 11px; word-break: break-all; color: #2A2118; line-height: 1.6; }
-  .btn-copiar { width: 100%; margin-top: 10px; padding: 11px; border-radius: 9px; border: 1.5px solid #E0632A;
-                background: white; color: #E0632A; font-weight: 700; font-size: 12.5px; }
+  #piePagina { margin-top: auto; display: flex; flex-direction: column; gap: 2px; border-top: 1px solid rgba(255,255,255,.08);
+               padding-top: 16px; position: relative; }
+  .link-sidebar { display: flex; align-items: center; gap: 11px; padding: 9px 12px; border-radius: 9px; font-size: 13px;
+                  font-weight: 600; text-decoration: none; color: #9AA6B4; }
 
-  .info-cupo { display: flex; justify-content: space-between; font-size: 13px; color: #6B5C48; padding: 8px 0; }
-  .info-cupo b { color: #2A2118; }
+  #contenido { flex: 1; padding: 36px 44px 60px 44px; display: flex; flex-direction: column; gap: 16px; min-width: 0; max-width: 760px; }
 
-  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #2A2118;
-           color: white; padding: 10px 18px; border-radius: 10px; font-size: 13px; display: none; }
+  .volver { display: inline-flex; align-items: center; gap: 6px; color: #64707C; font-size: 13.5px; font-weight: 600;
+            text-decoration: none; margin-bottom: 4px; }
+  h1 { font-size: 20px; color: #1A2530; margin-bottom: 2px; }
+  .sub-cliente { font-size: 12.5px; color: #64707C; margin-bottom: 6px; }
+
+  .tarjeta { background: #fff; border: 1px solid #E3E7EC; border-radius: 14px; padding: 20px; }
+  .tarjeta h2 { font-size: 13.5px; color: #64707C; margin-bottom: 12px; }
+
+  #canvasQR, #canvasQRJefe { display: block; margin: 0 auto 14px auto; border-radius: 10px; }
+  .qr-instruccion { text-align: center; font-size: 12px; color: #64707C; margin-bottom: 4px; }
+
+  .separador { display: flex; align-items: center; gap: 10px; margin: 18px 0; color: #DCE2E7; font-size: 11px; }
+  .separador::before, .separador::after { content: ''; flex: 1; height: 1px; background: #DCE2E7; }
+
+  .caja-texto { background: #F3F5F7; border: 1.5px dashed #DCE2E7; border-radius: 10px; padding: 12px; }
+  .caja-texto .token-texto { font-family: 'IBM Plex Mono', monospace; font-size: 11px; word-break: break-all; color: #1A2530; line-height: 1.6; }
+  .btn-copiar { width: 100%; margin-top: 10px; padding: 11px; border-radius: 9px; border: 1.5px solid #2E4374;
+                background: white; color: #2E4374; font-weight: 700; font-size: 12.5px; cursor: pointer; }
+
+  .info-cupo { display: flex; justify-content: space-between; font-size: 13px; color: #64707C; padding: 8px 0; }
+  .info-cupo b { color: #1A2530; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1A2530;
+           color: white; padding: 10px 18px; border-radius: 10px; font-size: 13px; display: none; z-index:60; }
+
+  .preview-logo-cliente {
+    width: 50px; height: 50px; border-radius: 10px; background: #EDF0F8; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 22px; overflow: hidden;
+  }
+  .preview-logo-cliente img { width: 100%; height: 100%; object-fit: cover; }
+  .link-cambiar-logo { font-size: 11.5px; color: #2E4374; font-weight: 600; cursor: pointer; }
+
+  .fila-item { display:flex; align-items:center; justify-content:space-between; gap: 12px; border:1px solid #E3E7EC;
+               border-radius:12px; padding:12px; margin-bottom:8px; flex-wrap: wrap; }
+
+  @media (max-width: 860px) {
+    #appPrincipal { flex-direction: column; }
+    #sidebar { width: 100%; flex: 0 0 auto; flex-direction: row; flex-wrap: wrap; align-items: center; padding: 16px; gap: 14px; }
+    .nav-seccion { display: none; }
+    #piePagina { margin-top: 0; border-top: none; padding-top: 0; flex-direction: row; align-items: center; margin-left: auto; }
+    .link-sidebar span { display: none; }
+    #contenido { padding: 24px 16px 80px 16px; max-width: 100%; }
+  }
 </style>
 </head>
 <body>
 
-<div class="volver" onclick="location.href='index.html'">← Todos los clientes</div>
-<h1 id="nombreCliente">Cargando...</h1>
-<div class="sub" id="fechaCliente"></div>
+<div id="appPrincipal">
 
-<div class="tarjeta">
-  <div class="info-cupo"><span>Capacidad de equipos</span><b id="capacidadCliente">—</b></div>
-  <div class="info-cupo"><span>Capacidad de usuarios</span><b id="capacidadUsuariosCliente">—</b></div>
-  <div class="info-cupo"><span>Licencia</span><b id="licenciaCliente">—</b></div>
-  <div class="info-cupo"><span>ID de cliente</span><b id="idCliente" style="font-family:monospace; font-size:11px;">—</b></div>
-  <button class="btn-copiar" onclick="abrirEditarCapacidad()" style="margin-top:10px;">✏️ Editar capacidad</button>
-</div>
+  <div id="sidebar">
+    <div class="marca">
+      <svg width="40" height="40" viewBox="0 0 40 40" style="flex:0 0 auto;">
+        <rect x="1" y="1" width="38" height="38" rx="10" fill="#2E4374"/>
+        <rect x="8" y="9" width="6" height="22" rx="1.5" fill="#fff"/>
+        <rect x="26" y="9" width="6" height="22" rx="1.5" fill="#fff"/>
+        <rect x="8" y="17" width="24" height="6" rx="1.5" fill="#fff"/>
+      </svg>
+      <div>
+        <div class="nombre">Manager IH</div>
+        <div class="sub">IH SISTEMAS · ARICA</div>
+      </div>
+    </div>
 
-<div class="tarjeta" id="tarjetaEditarCapacidad" style="display:none;">
-  <h2>Editar capacidad</h2>
-  <p style="font-size:12px; color:#9A8B76; margin-bottom:12px;">Esto NO afecta los datos que el cliente ya tiene cargados (ventas, inventario, usuarios) — solo cambia cuánto puede usar de ahora en adelante.</p>
-  <label style="font-size:12.5px; color:#6B5C48; display:block; margin-bottom:4px;">Cantidad de equipos</label>
-  <input type="number" id="inputEditarCapacidad" min="1" style="width:100%; padding:10px; border-radius:8px; border:1.5px solid #E4E1EC; margin-bottom:10px;">
-  <label style="font-size:12.5px; color:#6B5C48; display:block; margin-bottom:4px;">Cantidad de usuarios</label>
-  <input type="number" id="inputEditarCapacidadUsuarios" min="1" style="width:100%; padding:10px; border-radius:8px; border:1.5px solid #E4E1EC; margin-bottom:14px;">
-  <button class="btn-copiar" style="background:#E0632A; color:white; border:none;" onclick="guardarEdicionCapacidad()">Guardar cambios</button>
-  <button class="btn-copiar" onclick="document.getElementById('tarjetaEditarCapacidad').style.display='none'" style="margin-top:8px;">Cancelar</button>
-</div>
+    <div>
+      <div class="nav-seccion">PROGRAMAS</div>
+      <a href="index.html" class="nav-item activo">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8l1.2-4h13.6L20 8"/><path d="M4 8h16v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M9 12a3 3 0 0 0 6 0"/></svg>
+        Minimarket
+      </a>
+    </div>
 
-<div class="tarjeta">
-  <h2>Uso de Firebase (operaciones que tocan el servidor)</h2>
-  <p style="font-size:11.5px; color:#9A8B76; margin-bottom:10px;">Solo cuenta lo que gasta cupo de verdad (carritos a caja, usuarios) — "Cobrar aquí mismo" no está incluido, no gasta nada.</p>
-  <div class="info-cupo"><span>Hoy</span><b id="usoHoyCliente">—</b></div>
-  <div id="avisoUsoAlto" style="display:none; background:#FEF2F2; color:#B91C1C; font-size:12px; padding:8px 10px; border-radius:8px; margin-top:6px;"></div>
-  <div id="listaUsoDias" style="margin-top:10px; font-size:11.5px; color:#9A8B76;"></div>
-</div>
-
-<div class="tarjeta" id="tarjetaPendientesBiblioteca" style="display:none;">
-  <h2>Productos que este cliente propuso</h2>
-  <p style="font-size:11.5px; color:#9A8B76; margin-bottom:12px;">Códigos de barra nuevos que no estaban en la biblioteca general. Puedes aprobarlos (con o sin la foto que mandaron) o descartarlos.</p>
-  <div id="listaPendientesBiblioteca"></div>
-</div>
-
-<div class="tarjeta">
-  <h2>Token de activación</h2>
-  <p class="qr-instruccion">El primer equipo que lo escanee se vuelve el "maestro" de este cliente</p>
-  <canvas id="canvasQR"></canvas>
-
-  <div class="separador">O PEGAR COMO TEXTO</div>
-  <div class="caja-texto">
-    <div class="token-texto" id="tokenTexto">—</div>
+    <div id="piePagina">
+      <a href="biblioteca.html" class="link-sidebar">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9AA6B4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5.8c0-.6.4-1 1-1.1a29 29 0 0 1 7 0v14.6a29 29 0 0 0-7 0c-.6 0-1-.4-1-.9z"/><path d="M12 4.7a29 29 0 0 1 7 0c.6.1 1 .5 1 1.1v13.7a29 29 0 0 0-7 0"/></svg>
+        <span>Biblioteca de productos</span>
+      </a>
+      <div style="display:flex; align-items:center; gap:11px; padding:10px 12px; margin-top:8px;">
+        <div style="width:32px; height:32px; border-radius:9px; background:#2E4374; color:#fff; font-weight:700; font-size:12.5px; display:flex; align-items:center; justify-content:center; flex:0 0 auto;">N</div>
+        <div style="display:flex; flex-direction:column; flex:1; min-width:0;">
+          <div style="font-size:12.5px; font-weight:600; color:#fff; white-space:nowrap;">Nacho Huerta</div>
+          <a href="#" onclick="cerrarSesionNacho().then(() => location.reload())" style="font-size:11px; color:#7C8998; text-decoration:none;">Cerrar sesión</a>
+        </div>
+      </div>
+    </div>
   </div>
-  <button class="btn-copiar" onclick="copiarToken()">📋 Copiar token</button>
+
+  <div id="contenido">
+
+    <a class="volver" href="index.html">← Todos los clientes</a>
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:2px;">
+      <div class="preview-logo-cliente" id="previewLogoCliente">🏪</div>
+      <div>
+        <h1 id="nombreCliente" style="margin-bottom:0;">Cargando...</h1>
+        <label for="inputLogoCliente" class="link-cambiar-logo">Cambiar logo</label>
+        <input type="file" id="inputLogoCliente" accept="image/*" style="display:none;" onchange="alElegirLogoCliente(event)">
+      </div>
+    </div>
+    <div class="sub-cliente" id="fechaCliente"></div>
+
+    <div class="tarjeta">
+      <div class="info-cupo"><span>Capacidad de equipos</span><b id="capacidadCliente">—</b></div>
+      <div class="info-cupo"><span>Capacidad de usuarios</span><b id="capacidadUsuariosCliente">—</b></div>
+      <div class="info-cupo"><span>Licencia</span><b id="licenciaCliente">—</b></div>
+      <div class="info-cupo"><span>ID de cliente</span><b id="idCliente" class="mono" style="font-size:11px;">—</b></div>
+      <button class="btn-copiar" onclick="abrirEditarCapacidad()" style="margin-top:10px;">✏️ Editar capacidad</button>
+    </div>
+
+    <div class="tarjeta" id="tarjetaEditarCapacidad" style="display:none;">
+      <h2>Editar capacidad</h2>
+      <p style="font-size:12px; color:#64707C; margin-bottom:12px;">Esto NO afecta los datos que el cliente ya tiene cargados (ventas, inventario, usuarios) — solo cambia cuánto puede usar de ahora en adelante.</p>
+      <label style="font-size:12.5px; color:#64707C; display:block; margin-bottom:4px;">Cantidad de equipos</label>
+      <input type="number" id="inputEditarCapacidad" min="1" style="width:100%; padding:10px; border-radius:8px; border:1.5px solid #DCE2E7; margin-bottom:10px;">
+      <label style="font-size:12.5px; color:#64707C; display:block; margin-bottom:4px;">Cantidad de usuarios</label>
+      <input type="number" id="inputEditarCapacidadUsuarios" min="1" style="width:100%; padding:10px; border-radius:8px; border:1.5px solid #DCE2E7; margin-bottom:14px;">
+      <button class="btn-copiar" style="background:#2E4374; color:white;" onclick="guardarEdicionCapacidad()">Guardar cambios</button>
+      <button class="btn-copiar" onclick="document.getElementById('tarjetaEditarCapacidad').style.display='none'" style="margin-top:8px;">Cancelar</button>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Cuenta del jefe (acceso a Minimarket IH)</h2>
+      <p style="font-size:12px; color:#64707C; margin-bottom:12px;">Crea el usuario "jefe" de este negocio con una clave provisoria. El código/QR que se genera es lo que le entregas al dueño — al escanearlo en Minimarket IH entra directo (sin escribir nada) y ahí mismo elige su clave definitiva.</p>
+      <div id="bloqueCrearJefe">
+        <label style="font-size:12.5px; color:#64707C; display:block; margin-bottom:4px;">Nombre del jefe</label>
+        <input type="text" id="inputNombreJefe" placeholder="Ej: Don Pedro" style="width:100%; padding:10px; border-radius:8px; border:1.5px solid #DCE2E7; margin-bottom:10px;">
+        <button class="btn-copiar" style="background:#2E4374; color:white;" onclick="crearJefeUI()">Crear jefe y generar código</button>
+      </div>
+      <div id="bloqueJefeCreado" style="display:none; margin-top:6px;">
+        <p style="font-size:12px; color:#64707C; margin-bottom:8px;">Clave provisoria: <b id="claveProvisoriaJefe" class="mono">—</b> (se pide cambiar al primer ingreso)</p>
+        <canvas id="canvasQRJefe"></canvas>
+        <div class="caja-texto"><div class="token-texto" id="codigoJefeTexto">—</div></div>
+        <button class="btn-copiar" onclick="copiarCodigoJefe()">📋 Copiar código</button>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Equipos activados</h2>
+      <p style="font-size:12px; color:#64707C; margin-bottom:10px;">Los aparatos (celular/PC) que este cliente ya activó. Dar de baja libera cupo al instante.</p>
+      <div id="listaEquipos"><p style="font-size:12px; color:#96A2AC;">Cargando…</p></div>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Usuarios del negocio</h2>
+      <p style="font-size:12px; color:#64707C; margin-bottom:10px;">Cajeros y jefe de este negocio (además del jefe creado arriba).</p>
+      <div id="listaUsuariosNegocio"><p style="font-size:12px; color:#96A2AC;">Cargando…</p></div>
+      <div class="separador">AGREGAR USUARIO</div>
+      <label style="font-size:12.5px; color:#64707C; display:block; margin-bottom:4px;">Nombre</label>
+      <input type="text" id="inputNombreUsuarioNuevo" placeholder="Ej: María" style="width:100%; padding:10px; border-radius:8px; border:1.5px solid #DCE2E7; margin-bottom:10px;">
+      <label style="font-size:12.5px; color:#64707C; display:block; margin-bottom:4px;">Rol</label>
+      <select id="inputRolUsuarioNuevo" style="width:100%; padding:10px; border-radius:8px; border:1.5px solid #DCE2E7; margin-bottom:12px;">
+        <option value="empleado">Empleado</option>
+        <option value="jefe">Jefe</option>
+      </select>
+      <button class="btn-copiar" style="background:#2E4374; color:white;" onclick="agregarUsuarioNegocioUI()">+ Agregar usuario</button>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Reporte periódico por correo</h2>
+      <p style="font-size:12px; color:#64707C; margin-bottom:12px;">A qué correo y a qué hora se manda — el cliente elige desde su propia app con qué frecuencia (diario/semanal/mensual).</p>
+      <label style="font-size:12.5px; color:#64707C; display:block; margin-bottom:4px;">Correo de destino</label>
+      <input type="email" id="inputReporteEmail" placeholder="correo@ejemplo.com" style="width:100%; padding:10px; border-radius:8px; border:1.5px solid #DCE2E7; margin-bottom:10px;">
+      <label style="font-size:12.5px; color:#64707C; display:block; margin-bottom:4px;">Hora de envío</label>
+      <input type="time" id="inputReporteHora" style="width:100%; padding:10px; border-radius:8px; border:1.5px solid #DCE2E7; margin-bottom:14px;">
+      <button class="btn-copiar" style="background:#2E4374; color:white;" onclick="guardarConfigReporte()">Guardar</button>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Uso de Firebase (operaciones que tocan el servidor)</h2>
+      <p style="font-size:11.5px; color:#64707C; margin-bottom:10px;">Solo cuenta lo que gasta cupo de verdad (carritos a caja, usuarios) — "Cobrar aquí mismo" no está incluido, no gasta nada.</p>
+      <div class="info-cupo"><span>Hoy</span><b id="usoHoyCliente">—</b></div>
+      <div id="avisoUsoAlto" style="display:none; background:#F7E5E3; color:#C5433A; font-size:12px; padding:8px 10px; border-radius:8px; margin-top:6px;"></div>
+      <div id="listaUsoDias" style="margin-top:10px; font-size:11.5px; color:#64707C;"></div>
+    </div>
+
+    <div class="tarjeta" id="tarjetaPendientesBiblioteca" style="display:none;">
+      <h2>Productos que este cliente propuso</h2>
+      <p style="font-size:11.5px; color:#64707C; margin-bottom:12px;">Códigos de barra nuevos que no estaban en la biblioteca general. Puedes aprobarlos (con o sin la foto que mandaron) o descartarlos.</p>
+      <div id="listaPendientesBiblioteca"></div>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Token de activación (equipo nuevo)</h2>
+      <p class="qr-instruccion">El primer equipo que lo escanee se vuelve el "maestro" de este cliente</p>
+      <canvas id="canvasQR"></canvas>
+
+      <div class="separador">O PEGAR COMO TEXTO</div>
+      <div class="caja-texto">
+        <div class="token-texto" id="tokenTexto">—</div>
+      </div>
+      <button class="btn-copiar" onclick="copiarToken()">📋 Copiar token</button>
+    </div>
+
+  </div>
 </div>
 
 <div class="toast" id="toast">✓ Copiado</div>
@@ -100,6 +245,29 @@
   let tokenActual = "";
   let clienteActual = null;
 
+  function alElegirLogoCliente(evento) {
+    const archivo = evento.target.files[0];
+    if (!archivo || !clienteActual) return;
+    const lector = new FileReader();
+    lector.onload = (e) => {
+      const img = new Image();
+      img.onload = async () => {
+        const canvas = document.createElement('canvas');
+        const maxLado = 200;
+        let { width, height } = img;
+        if (width > height && width > maxLado) { height = height * (maxLado / width); width = maxLado; }
+        else if (height > maxLado) { width = width * (maxLado / height); height = maxLado; }
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        const logoData = canvas.toDataURL('image/jpeg', 0.75);
+        document.getElementById('previewLogoCliente').innerHTML = `<img src="${logoData}">`;
+        await editarClienteRemoto(clienteActual.cliente_id, { logo_data: logoData });
+      };
+      img.src = e.target.result;
+    };
+    lector.readAsDataURL(archivo);
+  }
+
   function abrirEditarCapacidad() {
     if (!clienteActual) return;
     document.getElementById("inputEditarCapacidad").value = clienteActual.capacidad;
@@ -114,9 +282,15 @@
       capacidad: nuevaCapacidad, capacidad_usuarios: nuevaCapacidadUsuarios,
     });
     document.getElementById("tarjetaEditarCapacidad").style.display = "none";
-    await cargarPantalla(); // recarga todo fresco, para confirmar que quedo guardado de verdad
+    await cargarPantalla();
   }
 
+  async function guardarConfigReporte() {
+    const email = document.getElementById("inputReporteEmail").value.trim();
+    const hora = document.getElementById("inputReporteHora").value;
+    await editarClienteRemoto(clienteActual.cliente_id, { reporte_email: email || null, reporte_hora: hora || null });
+    mostrarToast("Guardado.");
+  }
 
   async function cargarPantalla() {
     const params = new URLSearchParams(location.search);
@@ -126,9 +300,6 @@
       return;
     }
 
-    // Se consulta fresco al servidor, no la copia local guardada - asi esta
-    // pantalla siempre muestra el estado real, aunque haya cambiado desde
-    // otro lado despues de crearlo.
     const [cliente, msg] = await obtenerClienteRemoto(id);
     if (!cliente) {
       document.getElementById("nombreCliente").textContent = "Cliente no encontrado (" + msg + ")";
@@ -137,20 +308,97 @@
     clienteActual = cliente;
 
     document.getElementById("nombreCliente").textContent = cliente.nombre;
+    document.getElementById("previewLogoCliente").innerHTML = cliente.logo_data
+      ? `<img src="${cliente.logo_data}">` : '🏪';
     document.getElementById("capacidadCliente").textContent = cliente.capacidad + " equipo(s)";
+    document.getElementById("inputReporteEmail").value = cliente.reporte_email || "";
+    document.getElementById("inputReporteHora").value = cliente.reporte_hora || "";
     document.getElementById("capacidadUsuariosCliente").textContent = (cliente.capacidad_usuarios || 6) + " usuario(s)";
     document.getElementById("licenciaCliente").textContent =
       cliente.tipo_licencia === "trial" ? `Prueba, vence ${cliente.vence}` : "Permanente";
     document.getElementById("idCliente").textContent = cliente.cliente_id;
 
-    // El "token" ahora es simplemente el ID del cliente - no hay nada que
-    // firmar, la unica fuente de verdad es el documento en Firestore.
     tokenActual = cliente.cliente_id;
     document.getElementById("tokenTexto").textContent = tokenActual;
     QRCodeLib.toCanvas(document.getElementById("canvasQR"), tokenActual, { width: 240, margin: 1 });
 
     await cargarUso(cliente.cliente_id);
     await cargarPendientesBiblioteca(cliente.cliente_id);
+    await cargarEquipos(cliente.cliente_id);
+    await cargarUsuariosNegocio(cliente.cliente_id);
+  }
+
+  async function cargarEquipos(clienteId) {
+    const equipos = await listarEquiposRemoto(clienteId);
+    const cont = document.getElementById("listaEquipos");
+    if (equipos.length === 0) {
+      cont.innerHTML = `<p style="font-size:12px; color:#96A2AC;">Todavía no se activó ningún equipo.</p>`;
+      return;
+    }
+    cont.innerHTML = equipos.map((e) => `
+      <div class="fila-item">
+        <div>
+          <div style="font-weight:700; font-size:13.5px;">${e.nombre_equipo || '(sin nombre)'}</div>
+          <div class="mono" style="font-size:11px; color:#64707C;">${e.device_id}</div>
+        </div>
+        <button class="btn-copiar" style="width:auto; padding:8px 14px; color:#C5433A; border-color:#C5433A;" onclick="darDeBajaEquipoUI('${clienteActual.cliente_id}', '${e.device_id}')">Dar de baja</button>
+      </div>
+    `).join("");
+  }
+
+  async function darDeBajaEquipoUI(clienteId, deviceId) {
+    if (!confirm("¿Dar de baja este equipo? Libera cupo al instante, pero ese aparato va a tener que activarse de nuevo si se quiere volver a usar.")) return;
+    await soltarEquipoRemoto(clienteId, deviceId);
+    await cargarEquipos(clienteId);
+  }
+
+  async function cargarUsuariosNegocio(clienteId) {
+    const usuarios = await obtenerUsuariosDeNegocio(clienteId);
+    const cont = document.getElementById("listaUsuariosNegocio");
+    if (usuarios.length === 0) {
+      cont.innerHTML = `<p style="font-size:12px; color:#96A2AC;">Todavía no hay usuarios en este negocio.</p>`;
+      return;
+    }
+    cont.innerHTML = usuarios.map((u) => `
+      <div class="fila-item">
+        <div>
+          <div style="font-weight:700; font-size:13.5px;">${u.nombre} ${u.activo === false ? '<span style="color:#C5433A; font-weight:400;">(inactivo)</span>' : ''}</div>
+          <div style="font-size:11px; color:#64707C;">${u.rol === 'jefe' ? 'Jefe' : 'Empleado'}${u.clave_temporal ? ' · clave provisoria pendiente' : ''}</div>
+        </div>
+        <button class="btn-copiar" style="width:auto; padding:8px 14px; ${u.activo === false ? '' : 'color:#C5433A; border-color:#C5433A;'}" onclick="alternarActivoUsuarioUI('${clienteActual.cliente_id}', '${u.id}', ${u.activo === false})">${u.activo === false ? 'Reactivar' : 'Dar de baja'}</button>
+      </div>
+    `).join("");
+  }
+
+  async function alternarActivoUsuarioUI(clienteId, usuarioId, reactivar) {
+    await editarUsuarioRemoto(clienteId, usuarioId, { activo: reactivar });
+    await cargarUsuariosNegocio(clienteId);
+  }
+
+  async function agregarUsuarioNegocioUI() {
+    const nombre = document.getElementById("inputNombreUsuarioNuevo").value.trim();
+    const rol = document.getElementById("inputRolUsuarioNuevo").value;
+    if (!nombre) return;
+    await crearUsuarioRemoto(clienteActual.cliente_id, { nombre, rol });
+    document.getElementById("inputNombreUsuarioNuevo").value = "";
+    await cargarUsuariosNegocio(clienteActual.cliente_id);
+    mostrarToast("Usuario agregado.");
+  }
+
+  async function crearJefeUI() {
+    const nombre = document.getElementById("inputNombreJefe").value.trim();
+    if (!nombre) return;
+    const { clave_provisoria, codigo } = await crearJefeRemoto(clienteActual.cliente_id, nombre);
+    document.getElementById("bloqueCrearJefe").style.display = "none";
+    document.getElementById("bloqueJefeCreado").style.display = "block";
+    document.getElementById("claveProvisoriaJefe").textContent = clave_provisoria;
+    document.getElementById("codigoJefeTexto").textContent = codigo;
+    QRCodeLib.toCanvas(document.getElementById("canvasQRJefe"), codigo, { width: 240, margin: 1 });
+    await cargarUsuariosNegocio(clienteActual.cliente_id);
+  }
+
+  function copiarCodigoJefe() {
+    navigator.clipboard.writeText(document.getElementById("codigoJefeTexto").textContent).then(() => mostrarToast("✓ Copiado"));
   }
 
   async function cargarPendientesBiblioteca(clienteId) {
@@ -163,13 +411,13 @@
     }
     tarjeta.style.display = "block";
     cont.innerHTML = pendientes.map((p) => `
-      <div style="border:1.5px solid #E4E1EC; border-radius:12px; padding:12px; margin-bottom:10px;">
+      <div style="border:1.5px solid #DCE2E7; border-radius:12px; padding:12px; margin-bottom:10px;">
         <div style="font-weight:700; font-size:14px;">${p.nombre}</div>
-        <div style="font-size:12px; color:#9A8B76; margin-bottom:8px;">Código: ${p.codigo_barra}${p.imagen_data ? " · con foto" : " · sin foto"}</div>
+        <div style="font-size:12px; color:#64707C; margin-bottom:8px;">Código: ${p.codigo_barra}${p.imagen_data ? " · con foto" : " · sin foto"}</div>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
           ${p.imagen_data ? `<button class="btn-copiar" onclick="aprobarPendienteUI('${clienteId}', '${p.id}', true)" style="flex:1; min-width:140px;">✓ Aprobar con foto</button>` : ""}
           <button class="btn-copiar" onclick="aprobarPendienteUI('${clienteId}', '${p.id}', false)" style="flex:1; min-width:140px;">✓ Aprobar sin foto</button>
-          <button class="btn-copiar" onclick="descartarPendienteUI('${clienteId}', '${p.id}')" style="flex:1; min-width:100px; color:#B91C1C;">✕ Descartar</button>
+          <button class="btn-copiar" onclick="descartarPendienteUI('${clienteId}', '${p.id}')" style="flex:1; min-width:100px; color:#C5433A;">✕ Descartar</button>
         </div>
       </div>
     `).join("");
@@ -180,9 +428,6 @@
     const item = pendientes.find((p) => p.id === itemId);
     if (!item) return;
 
-    // Puede pasar que 2 clientes distintos propongan el mismo codigo nuevo
-    // casi al mismo tiempo, antes de que Nacho revise ninguno - si eso
-    // pasa, avisar en vez de pisar en silencio lo que ya se habia aprobado.
     const yaExiste = await buscarEnBiblioteca(item.codigo_barra);
     if (yaExiste) {
       const seguro = confirm(
@@ -205,7 +450,7 @@
     await cargarPendientesBiblioteca(clienteId);
   }
 
-  const UMBRAL_OPERACIONES_DIA = 1200; // estandar sugerido - ajustable a ojo, no es un limite real de Firebase
+  const UMBRAL_OPERACIONES_DIA = 1200;
   async function cargarUso(clienteId) {
     const hoy = await obtenerUsoDeHoy(clienteId);
     document.getElementById("usoHoyCliente").textContent = `${hoy.operaciones} operaciones`;
@@ -224,12 +469,14 @@
       "Últimos 7 días: " + dias.map((d) => `${d.fecha.slice(5)}: ${d.operaciones}`).join(" · ");
   }
 
+  function mostrarToast(texto) {
+    const t = document.getElementById("toast");
+    t.textContent = texto;
+    t.style.display = "block";
+    setTimeout(() => { t.style.display = "none"; }, 1600);
+  }
   function copiarToken() {
-    navigator.clipboard.writeText(tokenActual).then(() => {
-      const t = document.getElementById("toast");
-      t.style.display = "block";
-      setTimeout(() => { t.style.display = "none"; }, 1600);
-    });
+    navigator.clipboard.writeText(tokenActual).then(() => mostrarToast("✓ Copiado"));
   }
 </script>
 </body>
