@@ -13438,10 +13438,6 @@
     const n2 = e2.filters.concat([t2]);
     return new __PRIVATE_QueryImpl(e2.path, e2.collectionGroup, e2.explicitOrderBy.slice(), n2, e2.limit, e2.limitType, e2.startAt, e2.endAt);
   }
-  function __PRIVATE_queryWithAddedOrderBy(e2, t2) {
-    const n2 = e2.explicitOrderBy.concat([t2]);
-    return new __PRIVATE_QueryImpl(e2.path, e2.collectionGroup, n2, e2.filters.slice(), e2.limit, e2.limitType, e2.startAt, e2.endAt);
-  }
   function __PRIVATE_queryWithLimit(e2, t2, n2) {
     return new __PRIVATE_QueryImpl(e2.path, e2.collectionGroup, e2.explicitOrderBy.slice(), e2.filters.slice(), t2, n2, e2.startAt, e2.endAt);
   }
@@ -17061,37 +17057,12 @@ Total Duration: ${a - u2}ms`);
       return e2 instanceof ___PRIVATE_DeleteFieldValueImpl;
     }
   };
-  function __PRIVATE_createSentinelChildContext(e2, t2, n2) {
-    return new ParseContextImpl({
-      dataSource: 3,
-      targetDoc: t2.settings.targetDoc,
-      methodName: e2._methodName,
-      arrayElement: n2
-    }, t2.databaseId, t2.serializer, t2.ignoreUndefinedProperties);
-  }
   var __PRIVATE_ServerTimestampFieldValueImpl = class ___PRIVATE_ServerTimestampFieldValueImpl extends FieldValue {
     _toFieldTransform(e2) {
       return new FieldTransform(e2.path, new __PRIVATE_ServerTimestampTransform());
     }
     isEqual(e2) {
       return e2 instanceof ___PRIVATE_ServerTimestampFieldValueImpl;
-    }
-  };
-  var __PRIVATE_ArrayUnionFieldValueImpl = class ___PRIVATE_ArrayUnionFieldValueImpl extends FieldValue {
-    constructor(e2, t2) {
-      super(e2), this._r = t2;
-    }
-    _toFieldTransform(e2) {
-      const t2 = __PRIVATE_createSentinelChildContext(
-        this,
-        e2,
-        /*array=*/
-        true
-      ), n2 = this._r.map(((e3) => __PRIVATE_parseData(e3, t2))), r2 = new __PRIVATE_ArrayUnionTransformOperation(n2);
-      return new FieldTransform(e2.path, r2);
-    }
-    isEqual(e2) {
-      return e2 instanceof ___PRIVATE_ArrayUnionFieldValueImpl && deepEqual(this._r, e2._r);
     }
   };
   var __PRIVATE_NumericIncrementFieldValueImpl = class ___PRIVATE_NumericIncrementFieldValueImpl extends FieldValue {
@@ -17378,9 +17349,6 @@ Total Duration: ${a - u2}ms`);
   }
   function serverTimestamp() {
     return new __PRIVATE_ServerTimestampFieldValueImpl("serverTimestamp");
-  }
-  function arrayUnion(...e2) {
-    return new __PRIVATE_ArrayUnionFieldValueImpl("arrayUnion", e2);
   }
   function increment(e2) {
     return new __PRIVATE_NumericIncrementFieldValueImpl("increment", e2);
@@ -28667,31 +28635,6 @@ This typically indicates that your device does not have a healthy Internet conne
       return "and" === this.type ? "and" : "or";
     }
   };
-  var QueryOrderByConstraint = class _QueryOrderByConstraint extends QueryConstraint {
-    /**
-     * @internal
-     */
-    constructor(e2, t2) {
-      super(), this._field = e2, this._direction = t2, /** The type of this query constraint */
-      this.type = "orderBy";
-    }
-    static _create(e2, t2) {
-      return new _QueryOrderByConstraint(e2, t2);
-    }
-    _apply(e$1) {
-      const t2 = (function __PRIVATE_newQueryOrderBy(e$12, t3, n2) {
-        if (null !== e$12.startAt) throw new e(ta.INVALID_ARGUMENT, "Invalid query. You must not call startAt() or startAfter() before calling orderBy().");
-        if (null !== e$12.endAt) throw new e(ta.INVALID_ARGUMENT, "Invalid query. You must not call endAt() or endBefore() before calling orderBy().");
-        const r2 = new OrderBy(t3, n2);
-        return r2;
-      })(e$1._query, this._field, this._direction);
-      return new Query(e$1.firestore, e$1.converter, __PRIVATE_queryWithAddedOrderBy(e$1._query, t2));
-    }
-  };
-  function orderBy(e2, t2 = "asc") {
-    const n2 = t2, r2 = K("orderBy", e2);
-    return QueryOrderByConstraint._create(r2, n2);
-  }
   function __PRIVATE_parseDocumentIdValue(e$1, t2, n2) {
     if ("string" == typeof (n2 = getModularInstance(n2))) {
       if ("" === n2) throw new e(ta.INVALID_ARGUMENT, "Invalid query. When querying with documentId(), you must provide a valid document ID, but it was an empty string.");
@@ -28770,6 +28713,9 @@ This typically indicates that your device does not have a healthy Internet conne
     // performing validation.
     (t2 = getModularInstance(t2)) || t2 instanceof FieldPath2 ? __PRIVATE_parseUpdateVarargs(a, "updateDoc", e2._key, t2, n2, r2) : __PRIVATE_parseUpdateData(a, "updateDoc", e2._key, t2);
     return executeWrite(s2, [o2.toMutation(e2._key, Precondition.exists(true))]);
+  }
+  function deleteDoc(e2) {
+    return executeWrite(ra(e2.firestore, da), [new __PRIVATE_DeleteMutation(e2._key, Precondition.none())]);
   }
   function addDoc(e2, t2) {
     const n2 = ra(e2.firestore, da), r2 = doc(e2), s2 = __PRIVATE_applyFirestoreDataConverter(e2.converter, t2), a = la(e2.firestore);
@@ -35857,25 +35803,24 @@ Firebase CLI install instructions: https://firebase.google.com/docs/cli
   }
   registerAppCheck();
 
-  // entrada.js
+  // fuente-firebase-sync.mjs
   window.FirebaseSync = {
     initializeApp,
     getFirestore,
-    doc,
-    setDoc,
-    getDoc,
-    getDocs,
-    onSnapshot,
-    updateDoc,
-    arrayUnion,
-    serverTimestamp,
     enableIndexedDbPersistence,
     connectFirestoreEmulator,
+    doc,
     collection,
-    addDoc,
     query,
     where,
-    orderBy,
+    onSnapshot,
+    getDoc,
+    getDocs,
+    setDoc,
+    updateDoc,
+    addDoc,
+    deleteDoc,
+    serverTimestamp,
     increment,
     getAuth,
     signInWithEmailAndPassword,
@@ -35886,6 +35831,26 @@ Firebase CLI install instructions: https://firebase.google.com/docs/cli
   };
 })();
 /*! Bundled license information:
+
+@firebase/util/dist/postinstall.mjs:
+@firebase/firestore/dist/common-CE5hrKY-.esm.js:
+@firebase/firestore/dist/common-CE5hrKY-.esm.js:
+  (**
+   * @license
+   * Copyright 2025 Google LLC
+   *
+   * Licensed under the Apache License, Version 2.0 (the "License");
+   * you may not use this file except in compliance with the License.
+   * You may obtain a copy of the License at
+   *
+   *   http://www.apache.org/licenses/LICENSE-2.0
+   *
+   * Unless required by applicable law or agreed to in writing, software
+   * distributed under the License is distributed on an "AS IS" BASIS,
+   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   * See the License for the specific language governing permissions and
+   * limitations under the License.
+   *)
 
 @firebase/util/dist/index.esm.js:
 @firebase/util/dist/index.esm.js:
@@ -36935,25 +36900,6 @@ re2js/build/index.js:
   (**
    * @license
    * Copyright 2023 Google LLC
-   *
-   * Licensed under the Apache License, Version 2.0 (the "License");
-   * you may not use this file except in compliance with the License.
-   * You may obtain a copy of the License at
-   *
-   *   http://www.apache.org/licenses/LICENSE-2.0
-   *
-   * Unless required by applicable law or agreed to in writing, software
-   * distributed under the License is distributed on an "AS IS" BASIS,
-   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   * See the License for the specific language governing permissions and
-   * limitations under the License.
-   *)
-
-@firebase/firestore/dist/common-CE5hrKY-.esm.js:
-@firebase/firestore/dist/common-CE5hrKY-.esm.js:
-  (**
-   * @license
-   * Copyright 2025 Google LLC
    *
    * Licensed under the Apache License, Version 2.0 (the "License");
    * you may not use this file except in compliance with the License.

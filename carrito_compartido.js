@@ -129,17 +129,60 @@ function escuchaUsuariosActiva() {
   return _cacheUsuarios !== null;
 }
 
-async function crearUsuarioRemoto(clienteId, datos) {
-  const col = FirebaseSync.collection(db, 'negocios', clienteId, 'usuarios');
+// A qué colección van los usuarios de un cliente depende de qué programa
+// tiene habilitado: Minimarket/Caja Móvil los guarda bajo negocios/{id},
+// Parking los guarda bajo clientes/{id} directo (un cliente de Parking no
+// tiene por qué tener un documento de "negocio"). Todo lo que lee/escribe
+// usuarios de acá en adelante recibe la raíz como parámetro (con 'negocios'
+// de default, para no romper nada de lo que ya llamaba a esto sin decir
+// cuál raíz usar).
+function raizUsuariosParaCliente(cliente) {
+  return (cliente && cliente.modulos && cliente.modulos.parking) ? 'clientes' : 'negocios';
+}
+
+async function crearUsuarioRemoto(clienteId, datos, raiz) {
+  const col = FirebaseSync.collection(db, raiz || 'negocios', clienteId, 'usuarios');
   const ref = await FirebaseSync.addDoc(col, { ...datos, activo: true });
   incrementarUsoDiario(clienteId, 'usuario_creado');
   return ref.id;
 }
 
-async function editarUsuarioRemoto(clienteId, usuarioId, cambios) {
-  const ref = FirebaseSync.doc(db, 'negocios', clienteId, 'usuarios', usuarioId);
+async function editarUsuarioRemoto(clienteId, usuarioId, cambios, raiz) {
+  const ref = FirebaseSync.doc(db, raiz || 'negocios', clienteId, 'usuarios', usuarioId);
   await FirebaseSync.updateDoc(ref, cambios);
   incrementarUsoDiario(clienteId, 'usuario_editado');
+}
+
+// ---- Claves: PBKDF2 con sal propia por usuario, nunca texto plano - mismo
+// esquema exacto que ya usan Caja Móvil (datos.js) y Parking
+// (parking-sync.js), para que una clave creada acá sirva para entrar en
+// cualquiera de las 2 apps sin conversión. ----
+const PBKDF2_ITERACIONES = 100000;
+function saltAleatoria() {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+function hexABytes(hex) {
+  const bytes = [];
+  for (let i = 0; i < hex.length; i += 2) bytes.push(parseInt(hex.slice(i, i + 2), 16));
+  return new Uint8Array(bytes);
+}
+async function hashClave(clave, saltHex) {
+  const salt = saltHex || saltAleatoria();
+  const claveKey = await crypto.subtle.importKey('raw', new TextEncoder().encode(clave), 'PBKDF2', false, ['deriveBits']);
+  const derivado = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt: hexABytes(salt), iterations: PBKDF2_ITERACIONES, hash: 'SHA-256' },
+    claveKey, 256
+  );
+  const hash = Array.from(new Uint8Array(derivado)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  return { hash, salt };
+}
+function generarClaveRespaldo() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const bytes = new Uint8Array(12);
+  crypto.getRandomValues(bytes);
+  const grupo = (offset) => Array.from({ length: 4 }, (_, i) => chars[bytes[offset + i] % chars.length]).join('');
+  return `${grupo(0)}-${grupo(4)}-${grupo(8)}`;
 }
 
 // ============================================================================
@@ -206,7 +249,7 @@ function generarClienteId() {
 // comparte con el cliente final es simplemente este ID - no hay nada que
 // firmar ni que falsificar, porque la unica fuente de verdad es el
 // documento en Firestore, no lo que el dispositivo pueda calcular solo.
-async function crearClienteRemoto({ nombre, capacidad, capacidadUsuarios, tipoLicencia, diasPrueba }) {
+async function crearClienteRemoto({ nombre, capacidad, capacidadUsuarios, tipoLicencia, diasPrueba, modulo }) {
   const clienteId = generarClienteId();
   const tipo = tipoLicencia === 'trial' ? 'trial' : 'permanente';
   let vence = null;
@@ -216,13 +259,26 @@ async function crearClienteRemoto({ nombre, capacidad, capacidadUsuarios, tipoLi
     fechaVence.setDate(fechaVence.getDate() + (Number(diasPrueba) || 15));
     vence = fechaVence.toISOString().slice(0, 10);
   }
+  const moduloInicial = modulo || 'minimarket';
   const ref = FirebaseSync.doc(db, 'clientes', clienteId);
   await FirebaseSync.setDoc(ref, {
     nombre, capacidad: capacidad || 2, capacidad_usuarios: capacidadUsuarios || 6,
-    tipo_licencia: tipo, vence,
+    tipo_licencia: tipo, vence, modulos: { [moduloInicial]: true },
     fecha_creado: FirebaseSync.serverTimestamp(),
   });
-  return { cliente_id: clienteId, nombre, capacidad: capacidad || 2, tipo_licencia: tipo, vence };
+  return { cliente_id: clienteId, nombre, capacidad: capacidad || 2, tipo_licencia: tipo, vence, modulos: { [moduloInicial]: true } };
+}
+
+// Trae TODOS los clientes desde el servidor (antes esta lista solo vivía en
+// localStorage de cada navegador) - hace falta para las pestañas por
+// programa y para el panel de uso total, que necesitan ver todos los
+// clientes, no solo los que este navegador creó alguna vez.
+async function listarTodosLosClientes() {
+  const col = FirebaseSync.collection(db, 'clientes');
+  const snap = await FirebaseSync.getDocs(col);
+  const clientes = [];
+  snap.forEach((doc) => clientes.push({ cliente_id: doc.id, ...doc.data() }));
+  return clientes;
 }
 
 // Lo usa cualquier dispositivo al activarse (o al revisar si sigue vigente
@@ -376,4 +432,131 @@ async function buscarEnBiblioteca(codigoBarra) {
 async function editarEntradaBiblioteca(codigoBarra, cambios) {
   const ref = FirebaseSync.doc(db, 'biblioteca_productos', codigoBarra);
   await FirebaseSync.updateDoc(ref, cambios);
+}
+
+// ============================================================================
+// EQUIPOS DE UN CLIENTE - traído desde Caja Móvil para que Manager IH tenga
+// visibilidad real de cuántos equipos tiene activados cada cliente y pueda
+// dar de baja uno (libera cupo al instante) sin pedirle el celular a nadie.
+// ============================================================================
+
+async function listarEquiposRemoto(clienteId) {
+  const col = FirebaseSync.collection(db, 'clientes', clienteId, 'equipos');
+  const snap = await FirebaseSync.getDocs(col);
+  const equipos = [];
+  snap.forEach((doc) => equipos.push({ device_id: doc.id, ...doc.data() }));
+  return equipos;
+}
+
+async function soltarEquipoRemoto(clienteId, deviceId) {
+  const ref = FirebaseSync.doc(db, 'clientes', clienteId, 'equipos', deviceId);
+  await FirebaseSync.deleteDoc(ref);
+}
+
+// ============================================================================
+// CUENTA DEL JEFE - Manager IH crea el primer usuario ("jefe") de un negocio
+// con una clave provisoria (clave_temporal=true) y genera un código que
+// combina el cliente_id con este usuario_id. Ese código (QR o texto) es lo
+// que Nacho le entrega al dueño del negocio - cuando lo escanea en
+// Minimarket IH (antes Caja Móvil), debe entrar directo como este usuario y
+// quedar obligado a elegir su propia clave (mismo mecanismo de
+// clave_temporal que ya existe para invitar empleados). Ese lado (leer el
+// código en la activación) se construye en otra conversación - ver
+// CONTEXTO_HANDOFF_JEFE_QR.md.
+// ============================================================================
+
+// Lectura puntual (no un listener en vivo) - esta pantalla se abre, se
+// muestra una foto del momento, y se refresca solo cuando el usuario hace
+// una acción (dar de baja, agregar) - no hace falta un listener permanente
+// como el que sí usa Caja Móvil mientras un cajero trabaja.
+async function obtenerUsuariosDeNegocio(clienteId, raiz) {
+  const col = FirebaseSync.collection(db, raiz || 'negocios', clienteId, 'usuarios');
+  const snap = await FirebaseSync.getDocs(col);
+  const usuarios = [];
+  snap.forEach((doc) => usuarios.push({ id: doc.id, ...doc.data() }));
+  return usuarios;
+}
+
+// El código QR de "primer ingreso" (clienteId#usuarioId) solo tiene sentido
+// para Minimarket/Caja Móvil, que sabe leerlo en su propia activación. Un
+// jefe de Parking entra distinto (activa un equipo a una sede, y ahí recién
+// inicia sesión con usuario/clave) - por eso acá no se genera "codigo" para
+// Parking, y la clave queda con hash de verdad (antes se guardaba en texto
+// plano, y ese jefe no podía iniciar sesión en ningún lado con esa clave).
+async function crearJefeRemoto(clienteId, nombre, raiz) {
+  const esParking = raiz === 'clientes';
+  const col = FirebaseSync.collection(db, raiz || 'negocios', clienteId, 'usuarios');
+  const claveProvisoria = Math.floor(1000 + Math.random() * 9000).toString();
+  const { hash, salt } = await hashClave(claveProvisoria);
+  const claveRespaldo = generarClaveRespaldo();
+  const respaldo = await hashClave(claveRespaldo);
+  const ref = await FirebaseSync.addDoc(col, {
+    nombre, rol: 'jefe', clave_hash: hash, clave_salt: salt,
+    clave_respaldo_hash: respaldo.hash, clave_respaldo_salt: respaldo.salt,
+    puede_gestionar_usuarios: true, clave_temporal: true, activo: true,
+  });
+  return {
+    usuario_id: ref.id, clave_provisoria: claveProvisoria,
+    codigo: esParking ? null : `${clienteId}#${ref.id}`,
+  };
+}
+
+// ============================================================================
+// ESTACIONAMIENTOS (Parking) - clientes/{clienteId}/estacionamientos/{loteId}.
+// Un cliente de Parking puede tener varias sedes (ej: un hospital con 2
+// ubicaciones) - cada una con su propia capacidad de calzos, su propio tope
+// de equipos, y sus propios usuarios/movimientos/garitas, sin mezclarse
+// entre sí. Nacho crea cada sede desde acá (Manager IH) y le entrega el
+// código de activación resultante (clienteId#loteId) a esa ubicación en
+// particular. Los usuarios (trabajadores) NO se crean acá - eso lo hace el
+// jefe desde dentro de la app de Parking, una vez que activa la primera
+// sede (ver parking_movil/parking-sync.js).
+// ============================================================================
+
+function generarLoteId(estacionamientosActuales) {
+  // Etiquetas cortas y legibles (E1, E2, ...) en vez de IDs largos al azar -
+  // el código de activación completo ya es bastante largo con el clienteId
+  // adelante, no hace falta sumarle más caracteres de los necesarios.
+  let n = (estacionamientosActuales || []).length + 1;
+  let candidato = `E${n}`;
+  const existentes = new Set((estacionamientosActuales || []).map((e) => e.lote_id));
+  while (existentes.has(candidato)) { n += 1; candidato = `E${n}`; }
+  return candidato;
+}
+
+async function listarEstacionamientosRemoto(clienteId) {
+  const col = FirebaseSync.collection(db, 'clientes', clienteId, 'estacionamientos');
+  const snap = await FirebaseSync.getDocs(col);
+  const items = [];
+  snap.forEach((doc) => items.push({ lote_id: doc.id, ...doc.data() }));
+  return items.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+}
+
+async function crearEstacionamientoRemoto(clienteId, { nombre, capacidadEquipos, esPago }) {
+  const existentes = await listarEstacionamientosRemoto(clienteId);
+  const loteId = generarLoteId(existentes);
+  const ref = FirebaseSync.doc(db, 'clientes', clienteId, 'estacionamientos', loteId);
+  await FirebaseSync.setDoc(ref, {
+    nombre: nombre || loteId, capacidad_equipos: Number(capacidadEquipos) || 2,
+    capacidad_total: 0, ocupados: 0, es_pago: !!esPago, fecha_creado: FirebaseSync.serverTimestamp(),
+  });
+  return { lote_id: loteId, codigo: `${clienteId}#${loteId}` };
+}
+
+// El "plus" de cobro por minuto - Nacho lo prende/apaga acá (es el gate
+// comercial), pero el PRECIO en sí (pesos por minuto, minutos de gracia,
+// etc.) lo ajusta el jefe desde su propia app una vez que está activado -
+// mismo patrón que la capacidad de calzos.
+async function editarModoPagoLote(clienteId, loteId, esPago) {
+  const ref = FirebaseSync.doc(db, 'clientes', clienteId, 'estacionamientos', loteId);
+  await FirebaseSync.setDoc(ref, { es_pago: !!esPago }, { merge: true });
+}
+
+async function eliminarEstacionamientoRemoto(clienteId, loteId) {
+  // Borrado simple del documento de la sede - NO borra en cascada sus
+  // subcolecciones (movimientos, usuarios asignados, equipos) porque
+  // Firestore no lo hace solo y esto es una acción rara (una sede que se
+  // cierra de verdad). Si hace falta limpiar el historial también, se hace
+  // a mano desde la consola de Firebase.
+  await FirebaseSync.deleteDoc(FirebaseSync.doc(db, 'clientes', clienteId, 'estacionamientos', loteId));
 }

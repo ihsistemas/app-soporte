@@ -153,18 +153,21 @@
     </div>
 
     <div class="tarjeta">
-      <h2>Cuenta del jefe (acceso a Minimarket IH)</h2>
-      <p style="font-size:12px; color:#64707C; margin-bottom:12px;">Crea el usuario "jefe" de este negocio con una clave provisoria. El código/QR que se genera es lo que le entregas al dueño — al escanearlo en Minimarket IH entra directo (sin escribir nada) y ahí mismo elige su clave definitiva.</p>
+      <h2 id="tituloCuentaJefe">Cuenta del jefe</h2>
+      <p style="font-size:12px; color:#64707C; margin-bottom:12px;" id="descripcionCuentaJefe">Crea el usuario "jefe" de este negocio con una clave provisoria. El código/QR que se genera es lo que le entregas al dueño — al escanearlo entra directo (sin escribir nada) y ahí mismo elige su clave definitiva.</p>
       <div id="bloqueCrearJefe">
         <label style="font-size:12.5px; color:#64707C; display:block; margin-bottom:4px;">Nombre del jefe</label>
         <input type="text" id="inputNombreJefe" placeholder="Ej: Don Pedro" style="width:100%; padding:10px; border-radius:8px; border:1.5px solid #DCE2E7; margin-bottom:10px;">
-        <button class="btn-copiar" style="background:#2E4374; color:white;" onclick="crearJefeUI()">Crear jefe y generar código</button>
+        <button class="btn-copiar" style="background:#2E4374; color:white;" onclick="crearJefeUI()">Crear jefe</button>
       </div>
       <div id="bloqueJefeCreado" style="display:none; margin-top:6px;">
-        <p style="font-size:12px; color:#64707C; margin-bottom:8px;">Clave provisoria: <b id="claveProvisoriaJefe" class="mono">—</b> (se pide cambiar al primer ingreso)</p>
-        <canvas id="canvasQRJefe"></canvas>
-        <div class="caja-texto"><div class="token-texto" id="codigoJefeTexto">—</div></div>
-        <button class="btn-copiar" onclick="copiarCodigoJefe()">📋 Copiar código</button>
+        <p style="font-size:12px; color:#64707C; margin-bottom:8px;">Usuario: <b id="nombreJefeCreado" class="mono">—</b> · Clave provisoria: <b id="claveProvisoriaJefe" class="mono">—</b> (se pide cambiar al primer ingreso)</p>
+        <div id="bloqueQrJefe">
+          <canvas id="canvasQRJefe"></canvas>
+          <div class="caja-texto"><div class="token-texto" id="codigoJefeTexto">—</div></div>
+          <button class="btn-copiar" onclick="copiarCodigoJefe()">📋 Copiar código</button>
+        </div>
+        <p id="notaJefeParking" style="display:none; font-size:12px; color:#64707C; background:#F3F5F7; padding:10px; border-radius:8px;">Este cliente es de Parking: no hay código de activación de usuario — dale este usuario y clave provisoria al jefe para que inicie sesión en la app de Parking, en un equipo ya activado a alguna de sus sedes (ver "Estacionamientos" más abajo).</p>
       </div>
     </div>
 
@@ -211,6 +214,27 @@
       <h2>Productos que este cliente propuso</h2>
       <p style="font-size:11.5px; color:#64707C; margin-bottom:12px;">Códigos de barra nuevos que no estaban en la biblioteca general. Puedes aprobarlos (con o sin la foto que mandaron) o descartarlos.</p>
       <div id="listaPendientesBiblioteca"></div>
+    </div>
+
+    <div class="tarjeta" id="tarjetaEstacionamientos" style="display:none;">
+      <h2>Estacionamientos (Parking)</h2>
+      <p style="font-size:12px; color:#64707C; margin-bottom:10px;">Cada sede tiene su propio código de activación, su propia capacidad de calzos y su propio tope de equipos - dáselo solo a las garitas de ESA ubicación. Los trabajadores los crea el jefe desde adentro de la app, una vez que la primera garita de una sede está activada.</p>
+      <div id="listaEstacionamientos"><p style="font-size:12px; color:#96A2AC;">Cargando…</p></div>
+      <div class="separador">NUEVA SEDE</div>
+      <label style="font-size:12.5px; color:#64707C; display:block; margin-bottom:4px;">Nombre de la sede</label>
+      <input type="text" id="inputNombreEstacionamiento" placeholder="Ej: Estacionamiento Principal" style="width:100%; padding:10px; border-radius:8px; border:1.5px solid #DCE2E7; margin-bottom:10px;">
+      <label style="font-size:12.5px; color:#64707C; display:block; margin-bottom:4px;">Cantidad de equipos (garitas) para esta sede</label>
+      <input type="number" id="inputCapacidadEquiposEstacionamiento" min="1" value="2" style="width:100%; padding:10px; border-radius:8px; border:1.5px solid #DCE2E7; margin-bottom:12px;">
+      <label style="font-size:12.5px; color:#64707C; display:flex; align-items:center; gap:8px; margin-bottom:14px; background:#F3F5F7; padding:10px; border-radius:8px;">
+        <input type="checkbox" id="inputEsPagoEstacionamiento" style="width:auto;"> <b>Plus:</b> estacionamiento de pago (cobra por minuto) - el jefe ajusta el precio desde su app
+      </label>
+      <button class="btn-copiar" style="background:#2E4374; color:white;" onclick="crearEstacionamientoUI()">+ Crear sede y generar código</button>
+      <div id="bloqueEstacionamientoCreado" style="display:none; margin-top:14px;">
+        <p style="font-size:12px; color:#64707C; margin-bottom:8px;">Sede creada — dale este código a las garitas de esa ubicación:</p>
+        <canvas id="canvasQREstacionamiento"></canvas>
+        <div class="caja-texto"><div class="token-texto" id="codigoEstacionamientoTexto">—</div></div>
+        <button class="btn-copiar" onclick="copiarCodigoEstacionamiento()">📋 Copiar código</button>
+      </div>
     </div>
 
     <div class="tarjeta">
@@ -326,6 +350,70 @@
     await cargarPendientesBiblioteca(cliente.cliente_id);
     await cargarEquipos(cliente.cliente_id);
     await cargarUsuariosNegocio(cliente.cliente_id);
+
+    const esParking = !!(cliente.modulos && cliente.modulos.parking);
+    if (esParking) {
+      document.getElementById('tarjetaEstacionamientos').style.display = 'block';
+      await cargarEstacionamientos(cliente.cliente_id);
+      document.getElementById('tituloCuentaJefe').textContent = 'Cuenta del jefe (acceso a Parking)';
+      document.getElementById('descripcionCuentaJefe').textContent = 'Crea el usuario "jefe" de este cliente con una clave provisoria - se la das para que inicie sesión en la app de Parking.';
+    }
+  }
+
+  // ============================================================
+  // ESTACIONAMIENTOS (Parking) - solo se muestra/usa si el cliente tiene
+  // el módulo de Parking habilitado (ver arriba en cargarPantalla).
+  // ============================================================
+  async function cargarEstacionamientos(clienteId) {
+    const lotes = await listarEstacionamientosRemoto(clienteId);
+    const cont = document.getElementById('listaEstacionamientos');
+    if (lotes.length === 0) {
+      cont.innerHTML = `<p style="font-size:12px; color:#96A2AC;">Todavía no hay ninguna sede creada para este cliente.</p>`;
+      return;
+    }
+    cont.innerHTML = lotes.map((e) => `
+      <div class="fila-item" style="align-items:flex-start;">
+        <div style="min-width:0;">
+          <div style="font-weight:700; font-size:13.5px;">${e.nombre} ${e.es_pago ? '<span style="font-size:10px; font-weight:700; color:#0F7A50; background:#E3F0EA; padding:2px 7px; border-radius:20px;">DE PAGO</span>' : ''}</div>
+          <div style="font-size:11.5px; color:#64707C; margin-top:2px;">Cupo de equipos: ${e.capacidad_equipos || 2} · Calzos: ${e.capacidad_total > 0 ? e.capacidad_total : 'sin límite (lo pone el jefe desde la app)'}</div>
+          <div class="mono" style="font-size:11px; color:#64707C; margin-top:4px; word-break:break-all;">${clienteId}#${e.lote_id}</div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
+          <button class="btn-copiar" style="width:auto; padding:8px 14px;" onclick="alternarPagoEstacionamientoUI('${clienteId}', '${e.lote_id}', ${!e.es_pago})">${e.es_pago ? 'Quitar plus de pago' : '+ Activar plus de pago'}</button>
+          <button class="btn-copiar" style="width:auto; padding:8px 14px; color:#C5433A; border-color:#C5433A;" onclick="eliminarEstacionamientoUI('${clienteId}', '${e.lote_id}')">Eliminar</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function alternarPagoEstacionamientoUI(clienteId, loteId, activar) {
+    await editarModoPagoLote(clienteId, loteId, activar);
+    await cargarEstacionamientos(clienteId);
+    mostrarToast(activar ? 'Plus de pago activado — el jefe ya puede poner el precio desde su app.' : 'Plus de pago desactivado.');
+  }
+
+  async function crearEstacionamientoUI() {
+    const nombre = document.getElementById('inputNombreEstacionamiento').value.trim();
+    const capacidadEquipos = document.getElementById('inputCapacidadEquiposEstacionamiento').value;
+    const esPago = document.getElementById('inputEsPagoEstacionamiento').checked;
+    if (!nombre) { alert('Ponle un nombre a la sede (ej: "Estacionamiento Principal").'); return; }
+    const { codigo } = await crearEstacionamientoRemoto(clienteActual.cliente_id, { nombre, capacidadEquipos, esPago });
+    document.getElementById('inputNombreEstacionamiento').value = '';
+    document.getElementById('inputEsPagoEstacionamiento').checked = false;
+    await cargarEstacionamientos(clienteActual.cliente_id);
+    document.getElementById('codigoEstacionamientoTexto').textContent = codigo;
+    QRCodeLib.toCanvas(document.getElementById('canvasQREstacionamiento'), codigo, { width: 220, margin: 1 });
+    document.getElementById('bloqueEstacionamientoCreado').style.display = 'block';
+  }
+
+  function copiarCodigoEstacionamiento() {
+    navigator.clipboard.writeText(document.getElementById('codigoEstacionamientoTexto').textContent).then(() => mostrarToast('✓ Copiado'));
+  }
+
+  async function eliminarEstacionamientoUI(clienteId, loteId) {
+    if (!confirm('¿Eliminar esta sede? Los equipos que ya estén activados en ella van a dejar de poder abrir la app. El historial de movimientos NO se borra (queda huérfano en Firestore, se puede limpiar a mano si hace falta).')) return;
+    await eliminarEstacionamientoRemoto(clienteId, loteId);
+    await cargarEstacionamientos(clienteId);
   }
 
   async function cargarEquipos(clienteId) {
@@ -353,7 +441,7 @@
   }
 
   async function cargarUsuariosNegocio(clienteId) {
-    const usuarios = await obtenerUsuariosDeNegocio(clienteId);
+    const usuarios = await obtenerUsuariosDeNegocio(clienteId, raizUsuariosParaCliente(clienteActual));
     const cont = document.getElementById("listaUsuariosNegocio");
     if (usuarios.length === 0) {
       cont.innerHTML = `<p style="font-size:12px; color:#96A2AC;">Todavía no hay usuarios en este negocio.</p>`;
@@ -371,7 +459,7 @@
   }
 
   async function alternarActivoUsuarioUI(clienteId, usuarioId, reactivar) {
-    await editarUsuarioRemoto(clienteId, usuarioId, { activo: reactivar });
+    await editarUsuarioRemoto(clienteId, usuarioId, { activo: reactivar }, raizUsuariosParaCliente(clienteActual));
     await cargarUsuariosNegocio(clienteId);
   }
 
@@ -379,7 +467,7 @@
     const nombre = document.getElementById("inputNombreUsuarioNuevo").value.trim();
     const rol = document.getElementById("inputRolUsuarioNuevo").value;
     if (!nombre) return;
-    await crearUsuarioRemoto(clienteActual.cliente_id, { nombre, rol });
+    await crearUsuarioRemoto(clienteActual.cliente_id, { nombre, rol }, raizUsuariosParaCliente(clienteActual));
     document.getElementById("inputNombreUsuarioNuevo").value = "";
     await cargarUsuariosNegocio(clienteActual.cliente_id);
     mostrarToast("Usuario agregado.");
@@ -388,12 +476,17 @@
   async function crearJefeUI() {
     const nombre = document.getElementById("inputNombreJefe").value.trim();
     if (!nombre) return;
-    const { clave_provisoria, codigo } = await crearJefeRemoto(clienteActual.cliente_id, nombre);
+    const { clave_provisoria, codigo } = await crearJefeRemoto(clienteActual.cliente_id, nombre, raizUsuariosParaCliente(clienteActual));
     document.getElementById("bloqueCrearJefe").style.display = "none";
     document.getElementById("bloqueJefeCreado").style.display = "block";
+    document.getElementById("nombreJefeCreado").textContent = nombre;
     document.getElementById("claveProvisoriaJefe").textContent = clave_provisoria;
-    document.getElementById("codigoJefeTexto").textContent = codigo;
-    QRCodeLib.toCanvas(document.getElementById("canvasQRJefe"), codigo, { width: 240, margin: 1 });
+    document.getElementById("bloqueQrJefe").style.display = codigo ? "block" : "none";
+    document.getElementById("notaJefeParking").style.display = codigo ? "none" : "block";
+    if (codigo) {
+      document.getElementById("codigoJefeTexto").textContent = codigo;
+      QRCodeLib.toCanvas(document.getElementById("canvasQRJefe"), codigo, { width: 240, margin: 1 });
+    }
     await cargarUsuariosNegocio(clienteActual.cliente_id);
   }
 
